@@ -1,0 +1,7 @@
+#Make sure you have 'automake' installed
+./autogen.sh
+make
+sudo cp src/.libs/libgstjdspfx.so /usr/lib/gstreamer-1.0
+
+#View the properties of the plugin with:
+gst-inspect-1.0 jdspfx

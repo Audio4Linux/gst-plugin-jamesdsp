@@ -1,0 +1,6 @@
+#ifndef GST_PLUGIN_JAMESDSP_GLOBAL_H
+#define GST_PLUGIN_JAMESDSP_GLOBAL_H
+#ifndef DEBUG
+#define DEBUG true
+#endif
+#endif //GST_PLUGIN_JAMESDSP_GLOBAL_H
