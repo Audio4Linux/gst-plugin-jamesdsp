@@ -22,7 +22,6 @@ typedef struct _GstjdspfxClass GstjdspfxClass;
 struct _Gstjdspfx {
     GstAudioFilter audiofilter;
 
-
     /* properties */
     // global enable
     gboolean fx_enabled;
@@ -31,6 +30,11 @@ struct _Gstjdspfx {
     gboolean tube_enabled;
     gint32 tube_drive;
 
+    // bass boost
+    gboolean bass_enabled;
+    gint32 bass_mode;
+    gint32 bass_filtertype;
+    gint32 bass_freq;
 
     /* < private > */
     EffectDSPMain *effectDspMain;

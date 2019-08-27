@@ -40,10 +40,16 @@ enum {
     PROP_0,
 
     /* global enable */
-            PROP_FX_ENABLE,
-    /* convolver */
-            PROP_TUBE_ENABLE,
-    PROP_TUBE_DRIVE
+    PROP_FX_ENABLE,
+    /* analog modelling */
+    PROP_TUBE_ENABLE,
+    PROP_TUBE_DRIVE,
+    /* bassboost */
+    PROP_BASS_ENABLE,
+    PROP_BASS_MODE,
+    PROP_BASS_FILTERTYPE,
+    PROP_BASS_FREQ,
+
 };
 
 #define ALLOWED_CAPS \
@@ -110,8 +116,28 @@ gst_jdspfx_class_init(GstjdspfxClass *klass) {
                                                          (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
     g_object_class_install_property(gobject_class, PROP_TUBE_DRIVE,
                                     g_param_spec_int("analogmodelling-tubedrive", "TubeDrive", "Tube drive/strength",
-                                                     0, 100000, 0,
+                                                     0, 12000, 0,
                                                      (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+
+    /* bass boost */
+    g_object_class_install_property(gobject_class, PROP_BASS_ENABLE,
+                                    g_param_spec_boolean("bass-enable", "BassEnabled",
+                                                         "Enable bass boost",
+                                                         FALSE,
+                                                         (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property(gobject_class, PROP_BASS_MODE,
+                                    g_param_spec_int("bass-mode", "BassMode", "Bass boost mode/strength",
+                                                     0, 3000, 1200,
+                                                     (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property(gobject_class, PROP_BASS_FREQ,
+                                    g_param_spec_int("bass-freq", "BassFreq", "Bass boost cutoff frequency",
+                                                     30, 300, 55,
+                                                     (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property(gobject_class, PROP_BASS_FILTERTYPE,
+                                    g_param_spec_int("bass-filtertype", "BassFilterType", "Bass boost filtertype [Linear phase 2049/4097 lowpass filter]",
+                                                     0, 1, 0,
+                                                     (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+
 
 
     gst_element_class_set_static_metadata(gstelement_class,
@@ -135,17 +161,27 @@ gst_jdspfx_class_init(GstjdspfxClass *klass) {
 static void sync_all_parameters(Gstjdspfx * self) {
     int32_t idx;
 
-    // analog modelling
-
     config_set_px0_vx0x0(self->effectDspMain, EFFECT_CMD_ENABLE);
 
-
+    // analog modelling
     command_set_px4_vx2x1(self->effectDspMain,
                           1206, (int16_t) self->tube_drive);
 
     command_set_px4_vx2x1(self->effectDspMain,
                           150, self->tube_enabled);
 
+    //bassboost
+    command_set_px4_vx2x1(self->effectDspMain,
+                          112, (int16_t)self->bass_mode);
+
+    command_set_px4_vx2x1(self->effectDspMain,
+                          113, (int16_t)self->bass_filtertype);
+
+    command_set_px4_vx2x1(self->effectDspMain,
+                          114, (int16_t)self->bass_freq);
+
+    command_set_px4_vx2x1(self->effectDspMain,
+                          1201, self->bass_enabled);
 }
 
 /* initialize the new element
@@ -198,8 +234,6 @@ gst_jdspfx_set_property(GObject *object, guint prop_id,
         case PROP_FX_ENABLE: {
             g_mutex_lock(&self->lock);
             self->fx_enabled = g_value_get_boolean(value);
-            if (self->fx_enabled)config_set_px0_vx0x0(self->effectDspMain, EFFECT_CMD_ENABLE);
-            else config_set_px0_vx0x0(self->effectDspMain, EFFECT_CMD_DISABLE);
             g_mutex_unlock(&self->lock);
         }
             break;
@@ -217,6 +251,39 @@ gst_jdspfx_set_property(GObject *object, guint prop_id,
             self->tube_drive = g_value_get_int(value);
             command_set_px4_vx2x1(self->effectDspMain,
                                   150, (int16_t) self->tube_drive);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+
+        case PROP_BASS_ENABLE: {
+            g_mutex_lock(&self->lock);
+            self->bass_enabled = g_value_get_boolean(value);
+            command_set_px4_vx2x1(self->effectDspMain,
+                                  1201, self->bass_enabled);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+        case PROP_BASS_MODE: {
+            g_mutex_lock(&self->lock);
+            self->bass_mode = g_value_get_int(value);
+            command_set_px4_vx2x1(self->effectDspMain,
+                                  112, (int16_t) self->bass_mode);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+        case PROP_BASS_FILTERTYPE: {
+            g_mutex_lock(&self->lock);
+            self->bass_filtertype = g_value_get_int(value);
+            command_set_px4_vx2x1(self->effectDspMain,
+                                  113, (int16_t) self->bass_filtertype);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+        case PROP_BASS_FREQ: {
+            g_mutex_lock(&self->lock);
+            self->bass_freq = g_value_get_int(value);
+            command_set_px4_vx2x1(self->effectDspMain,
+                                  114, (int16_t) self->bass_freq);
             g_mutex_unlock(&self->lock);
         }
             break;
@@ -351,7 +418,10 @@ gst_jdspfx_transform_ip(GstBaseTransform *base, GstBuffer *buf) {
         printf("\n------END------");
 
         gst_buffer_unmap(buf, &map);
+        delete in;
+        delete out;
     }
+
     return GST_FLOW_OK;
 }
 
