@@ -48,7 +48,7 @@ enum {
 
 #define ALLOWED_CAPS \
   "audio/x-raw,"                            \
-  " format=(string){"GST_AUDIO_NE(S16)"},"  \
+  " format=(string){"GST_AUDIO_NE(F32)"},"  \
   " rate=(int)[44100,MAX],"                 \
   " channels=(int)2,"                       \
   " layout=(string)interleaved"
@@ -118,7 +118,7 @@ gst_jdspfx_class_init(GstjdspfxClass *klass) {
                                           "jdspfx",
                                           "Filter/Effect/Audio",
                                           "JamesDSP Core wrapper for GStreamer1",
-                                          "ThePBone <tim.schneeberger@outlook.com>");
+                                          "ThePBone <tim.schneeberger@outlook.de>");
 
     caps = gst_caps_from_string(ALLOWED_CAPS);
     gst_audio_filter_class_add_pad_templates((GstAudioFilterClass * )GST_JDSPFX_CLASS (klass), caps);
@@ -286,13 +286,14 @@ gst_jdspfx_stop(GstBaseTransform *base) {
  */
 static GstFlowReturn
 gst_jdspfx_transform_ip(GstBaseTransform *base, GstBuffer *buf) {
-    if (filter->fx_enabled) {
-        Gstjdspfx * filter = GST_JDSPFX (base);
-        volatile guint idx, num_samples;
-        short *pcm_data;
-        GstClockTime timestamp, stream_time;
-        GstMapInfo map;
 
+    Gstjdspfx * filter = GST_JDSPFX (base);
+    volatile guint idx, num_samples;
+    //short *pcm_data;
+    float *pcm_data;
+    GstClockTime timestamp, stream_time;
+    GstMapInfo map;
+    if (filter->fx_enabled) {
         timestamp = GST_BUFFER_TIMESTAMP(buf);
         stream_time =
                 gst_segment_to_stream_time(&base->segment, GST_FORMAT_TIME, timestamp);
@@ -308,24 +309,28 @@ gst_jdspfx_transform_ip(GstBaseTransform *base, GstBuffer *buf) {
 
         gst_buffer_map(buf, &map, GST_MAP_READWRITE);
         num_samples = map.size / GST_AUDIO_FILTER_BPS(filter) / 2;
-        pcm_data = (int16_t * )(map.data);
+        //pcm_data = (int16_t * )(map.data);
+        pcm_data = (float * )(map.data);
         for (idx = 0; idx < num_samples * 2; idx++) {
-            pcm_data[idx] >>= 1;
+            //pcm_data[idx] >>= 1;
 
         }
         audio_buffer_t *in = (audio_buffer_t *) malloc(
                 sizeof(size_t)); //Allocate memory for the frameCount (size_t) in the struct
         in->frameCount = (size_t) num_samples;
-        in->s16 = (int16_t *) malloc(2 * num_samples *
-                                     sizeof(int16_t)); //Allocate memory for the 16bit int array seperately (because it's a pointer)
+        //in->s16 = (int16_t *) malloc(2 * num_samples * sizeof(int16_t)); //Allocate memory for the 16bit int array seperately (because it's a pointer)
+        in->f32 = (float *) malloc(2 * num_samples * sizeof(float));
         for (idx = 0; idx < num_samples * 2; idx++) {
-            in->s16[idx] = pcm_data[idx];
-            printf("%d ", in->s16[idx]);
+            //in->s16[idx] = pcm_data[idx];
+            //printf("%d ", in->s16[idx]);
+            in->f32[idx] = pcm_data[idx];
+            printf("%f ", in->f32[idx]);
         }
 
         audio_buffer_t *out = (audio_buffer_t *) malloc(sizeof(size_t));
         out->frameCount = num_samples;
-        out->s16 = (int16_t *) malloc(2 * num_samples * sizeof(int16_t));
+        //out->s16 = (int16_t *) malloc(2 * num_samples * sizeof(int16_t));
+        out->f32 = (float*) malloc(2 * num_samples * sizeof(float));
 
         printf("\n\n\n");
 
@@ -333,10 +338,14 @@ gst_jdspfx_transform_ip(GstBaseTransform *base, GstBuffer *buf) {
         filter->effectDspMain->process(in, out);
         g_mutex_unlock(&filter->lock);
         for (idx = 0; idx < num_samples * 2; idx++) {
-            if (out->s16[idx]) {
+            /*if (out->s16[idx]) {
                 printf("%d ", out->s16[idx]);
                 pcm_data[idx] = out->s16[idx];
-                pcm_data[idx] <<= 1;
+
+            } else printf("Index %d is null (outputbuffer) :(\n", idx);*/
+            if (out->f32[idx]) {
+                printf("%f ", out->f32[idx]);
+                pcm_data[idx] = out->f32[idx];
             } else printf("Index %d is null (outputbuffer) :(\n", idx);
         }
         printf("\n------END------");

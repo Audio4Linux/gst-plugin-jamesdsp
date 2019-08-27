@@ -193,7 +193,8 @@ int32_t EffectDSPMain::command(uint32_t cmdCode, uint32_t cmdSize, void* pCmdDat
 			*replyData = ret;
 			return 0;
 		}
-        formatFloatModeInt32Mode = 0; //short 16-bit samples
+        //formatFloatModeInt32Mode = 0; //short 16-bit samples
+        formatFloatModeInt32Mode = 1;
 
 		JLimiterSetCoefficients(&kLimiter, -0.1, 60.0, mSamplingRate);
 		fullStconvparams.in = inputBuffer;
