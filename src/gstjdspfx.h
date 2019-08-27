@@ -48,6 +48,15 @@ struct _Gstjdspfx {
     gboolean bs2b_enabled;
     gint32 bs2b_mode;
 
+    // compressor
+    gboolean compression_enabled;
+    gint32 compression_pregain;
+    gint32 compression_threshold;
+    gint32 compression_knee;
+    gint32 compression_ratio;
+    gint32 compression_attack;
+    gint32 compression_release;
+
     /* < private > */
     EffectDSPMain *effectDspMain;
     void *so_handle;

@@ -58,7 +58,14 @@ enum {
     /* bs2b */
     PROP_BS2B_MODE,
     PROP_BS2B_ENABLE,
-
+    /* compressor */
+    PROP_COMPRESSOR_ENABLE,
+    PROP_COMPRESSOR_PREGAIN,
+    PROP_COMPRESSOR_THRESHOLD,
+    PROP_COMPRESSOR_KNEE,
+    PROP_COMPRESSOR_RATIO,
+    PROP_COMPRESSOR_ATTACK,
+    PROP_COMPRESSOR_RELEASE,
 };
 
 #define ALLOWED_CAPS \
@@ -180,6 +187,37 @@ gst_jdspfx_class_init(GstjdspfxClass *klass) {
                                                      0, 2, 0,
                                                      (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
 
+    /* compressor */
+    g_object_class_install_property(gobject_class, PROP_COMPRESSOR_ENABLE,
+                                    g_param_spec_boolean("compression-enable", "CompEnabled",
+                                                         "Enable Compressor",
+                                                         FALSE,
+                                                         (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property(gobject_class, PROP_COMPRESSOR_PREGAIN,
+                                    g_param_spec_int("compression-pregain", "CompPregain", "Compressor pregain (dB)",
+                                                     0, 24, 12,
+                                                     (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property(gobject_class, PROP_COMPRESSOR_THRESHOLD,
+                                    g_param_spec_int("compression-threshold", "CompThres", "Compressor threshold (dB)",
+                                                     -80, 0, -60,
+                                                     (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property(gobject_class, PROP_COMPRESSOR_KNEE,
+                                    g_param_spec_int("compression-knee", "CompKnee", "Compressor knee (dB)",
+                                                     0, 40, 30,
+                                                     (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property(gobject_class, PROP_COMPRESSOR_RATIO,
+                                    g_param_spec_int("compression-ratio", "CompRatio", "Compressor ratio (1:xx)",
+                                                     -20, 20, 12,
+                                                     (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property(gobject_class, PROP_COMPRESSOR_ATTACK,
+                                    g_param_spec_int("compression-attack", "CompAttack", "Compressor attack (ms)",
+                                                     1, 1000, 1,
+                                                     (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property(gobject_class, PROP_COMPRESSOR_RELEASE,
+                                    g_param_spec_int("compression-release", "CompRelease", "Compressor release (ms)",
+                                                     1, 1000, 24,
+                                                     (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+
     gst_element_class_set_static_metadata(gstelement_class,
                                           "jdspfx",
                                           "Filter/Effect/Audio",
@@ -243,6 +281,25 @@ static void sync_all_parameters(Gstjdspfx * self) {
 
     command_set_px4_vx2x1(self->effectDspMain,
                           1208, self->bs2b_enabled);
+
+
+    // compressor
+    command_set_px4_vx2x1(self->effectDspMain,
+                          100, (int16_t)self->compression_pregain);
+    command_set_px4_vx2x1(self->effectDspMain,
+                          101, (int16_t)self->compression_threshold);
+    command_set_px4_vx2x1(self->effectDspMain,
+                          102, (int16_t)self->compression_knee);
+    command_set_px4_vx2x1(self->effectDspMain,
+                          103, (int16_t)self->compression_ratio);
+    command_set_px4_vx2x1(self->effectDspMain,
+                          104, (int16_t)self->compression_attack);
+    command_set_px4_vx2x1(self->effectDspMain,
+                          105, (int16_t)self->compression_release);
+    command_set_px4_vx2x1(self->effectDspMain,
+                          1200, self->compression_enabled);
+
+
 }
 
 /* initialize the new element
@@ -270,6 +327,14 @@ gst_jdspfx_init(Gstjdspfx * self) {
     self->stereowide_enabled = FALSE;
     self->bs2b_enabled = FALSE;
     self->bs2b_mode = 0;
+    self->compression_pregain = 12;
+    self->compression_threshold = -60;
+    self->compression_knee = 30;
+    self->compression_ratio = 12;
+    self->compression_attack = 1;
+    self->compression_release = 24;
+    self->compression_enabled = FALSE;
+
 
     /* initialize private resources */
     self->effectDspMain = NULL;
@@ -392,7 +457,7 @@ gst_jdspfx_set_property(GObject *object, guint prop_id,
             command_set_px4_vx2x1(self->effectDspMain,
                                   137, (int16_t) self->stereowide_mode);
             g_mutex_unlock(&self->lock);
-        } 
+        }
             break;
 
         case PROP_BS2B_ENABLE: {
@@ -411,6 +476,66 @@ gst_jdspfx_set_property(GObject *object, guint prop_id,
             g_mutex_unlock(&self->lock);
         }
             break;
+
+
+
+        case PROP_COMPRESSOR_ENABLE: {
+            g_mutex_lock(&self->lock);
+            self->compression_enabled = g_value_get_boolean(value);
+            command_set_px4_vx2x1(self->effectDspMain,
+                                  1200, self->compression_enabled);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+        case PROP_COMPRESSOR_PREGAIN: {
+            g_mutex_lock(&self->lock);
+            self->compression_pregain = g_value_get_int(value);
+            command_set_px4_vx2x1(self->effectDspMain,
+                                  100, (int16_t) self->compression_pregain);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+        case PROP_COMPRESSOR_THRESHOLD: {
+            g_mutex_lock(&self->lock);
+            self->compression_threshold  = g_value_get_int(value);
+            command_set_px4_vx2x1(self->effectDspMain,
+                                  101, (int16_t) self->compression_threshold);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+        case PROP_COMPRESSOR_KNEE: {
+            g_mutex_lock(&self->lock);
+            self->compression_knee  = g_value_get_int(value);
+            command_set_px4_vx2x1(self->effectDspMain,
+                                  102, (int16_t) self->compression_knee);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+        case PROP_COMPRESSOR_RATIO: {
+            g_mutex_lock(&self->lock);
+            self->compression_ratio  = g_value_get_int(value);
+            command_set_px4_vx2x1(self->effectDspMain,
+                                  103, (int16_t) self->compression_ratio);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+        case PROP_COMPRESSOR_ATTACK: {
+            g_mutex_lock(&self->lock);
+            self->compression_attack  = g_value_get_int(value);
+            command_set_px4_vx2x1(self->effectDspMain,
+                                  104, (int16_t) self->compression_attack);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+        case PROP_COMPRESSOR_RELEASE: {
+            g_mutex_lock(&self->lock);
+            self->compression_release  = g_value_get_int(value);
+            command_set_px4_vx2x1(self->effectDspMain,
+                                  105, (int16_t) self->compression_release);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
             break;

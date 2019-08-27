@@ -299,7 +299,7 @@ int32_t EffectDSPMain::command(uint32_t cmdCode, uint32_t cmdSize, void* pCmdDat
 		///DEBUG
         int32_t _cmd = ((int32_t *)cep)[3];
         int16_t _dat = ((int16_t *)cep)[8];
-		printf("\n\npsize: %lu\nvsize: %lu\ncmd: %lu\ndata: %lu\n\n",(unsigned long)cep->psize,(unsigned long)cep->vsize,(unsigned long)_cmd,(unsigned long)_dat);
+		printf("\n\npsize: %lu\nvsize: %lu\ncmd: %lu\ndata: %d\n\n",(unsigned long)cep->psize,(unsigned long)cep->vsize,(unsigned long)_cmd,(int)_dat);
 		////////
 
 		if (cep->psize == 4 && cep->vsize == 2)
