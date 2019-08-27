@@ -19,8 +19,8 @@ px4_vx2
 	*1208 bs2b.enable
 	*1204 stereowide.enable
 	*1206 analogmodelling.enable
-	1202 tone.enable
-	151 tone.filtertype 0
+	*1202 tone.enable
+	*151 tone.filtertype 0
 	1205 convolver.enable
 	
 	1212 ddc.enable
@@ -31,7 +31,7 @@ px4_vx2
 	10009 <Notify array transmit completed (ddc)>
 
 px4_vx8
-	1500 {masterswitch.limthreshold,masterswitch.limrelease} float[2]
+	*1500 {masterswitch.limthreshold,masterswitch.limrelease} float[2]
 
 	8888 <Send buffer info/Allocate memory>
 
@@ -39,7 +39,7 @@ px4_vx16
 	9999 <Send buffer info/Allocate memory>
 
 px4_vx60
-	115 {tone.eq.custom} float[15]
+	*115 {tone.eq.custom} float[15]
 
 px4_vx40 
 	1997 <Convolver/Benchmark stuff>

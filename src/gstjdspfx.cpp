@@ -70,6 +70,10 @@ enum {
     PROP_TONE_ENABLE,
     PROP_TONE_FILTERTYPE,
     PROP_TONE_EQ,
+    /* limiter */
+    PROP_MASTER_LIMTHRESHOLD,
+    PROP_MASTER_LIMRELEASE,
+
 };
 
 #define ALLOWED_CAPS \
@@ -150,7 +154,7 @@ gst_jdspfx_class_init(GstjdspfxClass *klass) {
                                                      0, 3000, 1200,
                                                      (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
     g_object_class_install_property(gobject_class, PROP_BASS_FREQ,
-                                    g_param_spec_int("bass-freq", "BassFreq", "Bass boost cutoff frequency",
+                                    g_param_spec_int("bass-freq", "BassFreq", "Bass boost cutoff frequency (Hz)",
                                                      30, 300, 55,
                                                      (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
     g_object_class_install_property(gobject_class, PROP_BASS_FILTERTYPE,
@@ -165,7 +169,7 @@ gst_jdspfx_class_init(GstjdspfxClass *klass) {
                                                          FALSE,
                                                          (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
     g_object_class_install_property(gobject_class, PROP_HEADSET_PRESET,
-                                    g_param_spec_int("headset-preset", "ReverbPreset", "Reverb preset",
+                                    g_param_spec_int("headset-preset", "ReverbPreset", "Reverb preset/strength",
                                                      0, 18, 8,
                                                      (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
 
@@ -187,7 +191,7 @@ gst_jdspfx_class_init(GstjdspfxClass *klass) {
                                                          FALSE,
                                                          (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
     g_object_class_install_property(gobject_class, PROP_BS2B_MODE,
-                                    g_param_spec_int("bs2b-mode", "BS2BMode", "BS2B strength",
+                                    g_param_spec_int("bs2b-mode", "BS2BMode", "BS2B mode",
                                                      0, 2, 0,
                                                      (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
 
@@ -237,6 +241,22 @@ gst_jdspfx_class_init(GstjdspfxClass *klass) {
     g_object_class_install_property (gobject_class, PROP_TONE_EQ,
                                      g_param_spec_string ("tone-eq", "EQCustom", "15-band EQ data (ex: 1200;50;-200;-500;-500;-500;-500;-450;-250;0;-300;-50;0;0;50) 100=1dB; min: -12dB, max: 12dB",
                                                           "0;0;0;0;0;0;0;0;0;0;0;0;0;0;0", (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+
+
+    /* limiter */
+    g_object_class_install_property(gobject_class, PROP_MASTER_LIMTHRESHOLD,
+                                    g_param_spec_float("masterswitch-limthreshold", "LimThreshold", "Limiter threshold (dB)",
+                                                     -60, 0, 0,
+                                                     (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+
+
+    g_object_class_install_property(gobject_class, PROP_MASTER_LIMRELEASE,
+                                    g_param_spec_float("masterswitch-limrelease", "LimRelease", "Limiter release (ms)",
+                                                        1.5, 2000, 60,
+                                                       (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+
+
+
 
     gst_element_class_set_static_metadata(gstelement_class,
                                           "jdspfx",
@@ -326,6 +346,9 @@ static void sync_all_parameters(Gstjdspfx * self) {
                           151, (int16_t)self->tone_filtertype);
     command_set_px4_vx2x1(self->effectDspMain,
                           1202, self->tone_enabled);
+
+    // limiter
+    command_set_limiter(self->effectDspMain,self->lim_threshold,self->lim_release);
 }
 
 /* initialize the new element
@@ -347,7 +370,7 @@ gst_jdspfx_init(Gstjdspfx * self) {
     self->bass_filtertype = 0;
     self->bass_freq = 55;
     self->bass_enabled = FALSE;
-    self->headset_preset = 0;
+    self->headset_preset = 8;
     self->headset_enabled = FALSE;
     self->stereowide_mode = 0;
     self->stereowide_enabled = FALSE;
@@ -364,7 +387,8 @@ gst_jdspfx_init(Gstjdspfx * self) {
     self->tone_enabled = FALSE;
     memset (self->tone_eq, 0,
             sizeof(self->tone_eq));
-
+    self->lim_threshold = 0;
+    self->lim_release = 60;
     /* initialize private resources */
     self->effectDspMain = NULL;
     self->effectDspMain = new EffectDSPMain();
@@ -593,6 +617,22 @@ gst_jdspfx_set_property(GObject *object, guint prop_id,
             }else{
                 printf("[E] EQ string too long (>64 bytes)");
             }
+            g_mutex_unlock (&self->lock);
+        }
+            break;
+        case PROP_MASTER_LIMTHRESHOLD:
+        {
+            g_mutex_lock (&self->lock);
+            self->lim_threshold = g_value_get_float(value);
+            command_set_limiter(self->effectDspMain,self->lim_threshold,self->lim_release);
+            g_mutex_unlock (&self->lock);
+        }
+            break;
+        case PROP_MASTER_LIMRELEASE:
+        {
+            g_mutex_lock (&self->lock);
+            self->lim_release = g_value_get_float(value);
+            command_set_limiter(self->effectDspMain,self->lim_threshold,self->lim_release);
             g_mutex_unlock (&self->lock);
         }
             break;

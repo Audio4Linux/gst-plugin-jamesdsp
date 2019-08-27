@@ -766,7 +766,7 @@ int32_t EffectDSPMain::command(uint32_t cmdCode, uint32_t cmdSize, void* pCmdDat
 		}
 		if (cep->psize == 4 && cep->vsize == 8)
 		{
-			int32_t cmd = ((int32_t *)cep)[3];
+			int32_t cmd = (int32_t)((float*)cep)[3];
 			if (cmd == 1500)
 			{
 				double limThreshold = (double)((float*)cep)[4];
@@ -777,7 +777,7 @@ int32_t EffectDSPMain::command(uint32_t cmdCode, uint32_t cmdSize, void* pCmdDat
 					limRelease = 0.15;
 				JLimiterSetCoefficients(&kLimiter, limThreshold, limRelease, (double)mSamplingRate);
 #ifdef DEBUG
-				LOGI("limThreshold: %lf, limRelease: %lf", limThreshold, limRelease);
+				printf("limThreshold: %f, limRelease: %f", (float)limThreshold, (float)limRelease);
 #endif
                 if(replyData!=NULL)*replyData = 0;
 				return 0;

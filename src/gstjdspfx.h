@@ -62,6 +62,10 @@ struct _Gstjdspfx {
     gint32 tone_filtertype;
     gchar tone_eq[64];
 
+    // master
+    gfloat lim_threshold;
+    gfloat lim_release;
+
     /* < private > */
     EffectDSPMain *effectDspMain;
     void *so_handle;

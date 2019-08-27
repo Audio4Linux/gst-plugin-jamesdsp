@@ -1,6 +1,7 @@
 # JamesDSP for Linux
 This is very experimental and obviously work in progress.
-Currently only analog modelling, bass boost, compression, reverbation and the stereo widener is implemented, and the plugin might produce crackling output if the samplerate is set incorrectly.
+Currently analog modelling, bass boost, bs2b, limiter, compression, reverbation and the stereo widener is implemented, and the plugin might produce crackling output if the samplerate is set incorrectly.
+###### (OpenSource Version)
 
 ## Workarounds
 ### Fix crackling/choppy sound

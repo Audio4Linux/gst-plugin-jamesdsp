@@ -18,7 +18,7 @@ void command_set_px4_vx2x1(EffectDSPMain *intf,int32_t cmd,int16_t value){
 
     intf->command(EFFECT_CMD_SET_PARAM, sizeof(unsigned char)*20,cep,NULL,NULL);
 }
-///Sends 32bit double arrays
+///Sends 32bit float arrays
 void command_set_px4_vx4x60(EffectDSPMain *intf,int32_t cmd,float *values){
     effect_param_t *cep = (effect_param_t *)malloc(5*sizeof(int32_t)+sizeof(float)*NUM_BANDS);
     cep->psize = 4;
@@ -31,7 +31,27 @@ void command_set_px4_vx4x60(EffectDSPMain *intf,int32_t cmd,float *values){
 
     intf->command(EFFECT_CMD_SET_PARAM, sizeof(float)*NUM_BANDS+5*sizeof(int32_t),cep,NULL,NULL);
 }
-///Parse and send eq data as 32-bit double array
+///Sends two 32bit float values (as an array)
+void command_set_px4_vx8x2(EffectDSPMain *intf,int32_t cmd,float *values){
+    effect_param_t *cep = (effect_param_t *)malloc(6*sizeof(float));
+    cep->psize = 4;
+    cep->vsize = 8;
+    cep->status = 0;
+    float * cmd_data_int = (float *)cep->data;
+    cmd_data_int[0] = cmd;
+    for (int i = 0; i < 2; i++)
+        cmd_data_int[1 + i] = (float) values[i];
+
+    intf->command(EFFECT_CMD_SET_PARAM, sizeof(float)*6,cep,NULL,NULL);
+}
+///Prepare and send limiter data as 32-bit float array
+void command_set_limiter(EffectDSPMain *intf,float thres,float release){
+    float* data = (float*)malloc(sizeof(float)*2);
+    data[0] = thres;
+    data[1] = release;
+    command_set_px4_vx8x2(intf,1500,data);
+}
+///Parse and send eq data as 32-bit float array
 void command_set_eq(EffectDSPMain *intf,char* eq){
     char *end = eq;
     float data[NUM_BANDS];
