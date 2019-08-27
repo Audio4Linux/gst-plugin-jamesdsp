@@ -1,11 +1,13 @@
 # JamesDSP for Linux
 This is very experimental and obviously work in progress.
-Currently only analog modelling is implemented, and the plugin might produce crackling output if the samplerate is set incorrectly.
+Currently only analog modelling, bass boost, reverbation and the stereo widener is implemented, and the plugin might produce crackling output if the samplerate is set incorrectly.
 
 ## Workarounds
 ### Fix crackling/choppy sound
-Set the default samplerate to 48000Hz in pulseaudio's config
+_Set the default samplerate to 48000Hz in pulseaudio's config:_
+
 `sudo nano /etc/pulse/daemon.conf`
+
 Replace this line:
 `;  default-sample-rate = 44100`
 with this one:
