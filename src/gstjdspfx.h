@@ -44,6 +44,10 @@ struct _Gstjdspfx {
     gboolean stereowide_enabled;
     gint32 stereowide_mode;
 
+    // bs2b
+    gboolean bs2b_enabled;
+    gint32 bs2b_mode;
+
     /* < private > */
     EffectDSPMain *effectDspMain;
     void *so_handle;

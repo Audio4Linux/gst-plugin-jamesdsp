@@ -1,0 +1,57 @@
+px4_vx2
+	100 compression.pregrain 12 
+	101 compression.threshold -60
+	102 compression.knee 30
+	103 compression.ratio 12
+	104 compression.attack 0.01 (*1000) -> 10
+	105 compression.release 0.01 (*1000) -> 10
+	*112 bass.mode
+	*113 bass.filtertype
+	*114 bass.freq
+	*128 headset.preset
+	*137 stereowide.mode
+	*188 bs2b.mode 0, 0-2
+ 	*150 analogmodelling.tubedrive
+	151 tone.filtertype 0
+	1200 compression.enable
+	*1201 bass.enable
+	1202 tone.enable
+	*1203 headset.enable
+	*1208 bs2b.enable
+	*1204 stereowide.enable
+	1205 convolver.enable
+	*1206 analogmodelling.enable
+	1212 ddc.enable
+
+	10003 <Increment sliced buffer (convolver)>
+	10004 <Notify array transmit completed (convolver)>
+	10005 <Increment sliced buffer (ddc)>
+	10009 <Notify array transmit completed (ddc)>
+
+px4_vx8
+	1500 {masterswitch.limthreshold,masterswitch.limrelease} float[2]
+
+	8888 <Send buffer info/Allocate memory>
+
+px4_vx16
+	9999 <Send buffer info/Allocate memory>
+
+px4_vx60
+	115 {tone.eq.custom} float[15]
+
+px4_vx40 
+	1997 <Convolver/Benchmark stuff>
+	1998 <Convolver/Benchmark stuff>
+
+px4_vx256
+	12001 <Commit buffer (ddc)>
+
+px4_vx16384
+	12000 <Commit buffer (convolver)>
+
+/*****************************************
+	 JamesDSP command map
+       * = implemented on linux
+
+	       ThePBone		
+******************************************/

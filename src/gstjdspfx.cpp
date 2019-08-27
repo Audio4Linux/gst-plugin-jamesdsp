@@ -55,6 +55,9 @@ enum {
    /* stereo wide */
     PROP_STEREOWIDE_MODE,
     PROP_STEREOWIDE_ENABLE,
+    /* bs2b */
+    PROP_BS2B_MODE,
+    PROP_BS2B_ENABLE,
 
 };
 
@@ -166,6 +169,16 @@ gst_jdspfx_class_init(GstjdspfxClass *klass) {
                                                      0, 4, 0,
                                                      (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
 
+    /* bs2b */
+    g_object_class_install_property(gobject_class, PROP_BS2B_ENABLE,
+                                    g_param_spec_boolean("bs2b-enable", "BS2BEnabled",
+                                                         "Enable BS2B",
+                                                         FALSE,
+                                                         (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property(gobject_class, PROP_BS2B_MODE,
+                                    g_param_spec_int("bs2b-mode", "BS2BMode", "BS2B strength",
+                                                     0, 2, 0,
+                                                     (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
 
     gst_element_class_set_static_metadata(gstelement_class,
                                           "jdspfx",
@@ -223,6 +236,13 @@ static void sync_all_parameters(Gstjdspfx * self) {
 
     command_set_px4_vx2x1(self->effectDspMain,
                           1204, self->stereowide_enabled);
+
+    // bs2b
+    command_set_px4_vx2x1(self->effectDspMain,
+                          188, (int16_t)self->bs2b_mode);
+
+    command_set_px4_vx2x1(self->effectDspMain,
+                          1208, self->bs2b_enabled);
 }
 
 /* initialize the new element
@@ -248,6 +268,8 @@ gst_jdspfx_init(Gstjdspfx * self) {
     self->headset_enabled = FALSE;
     self->stereowide_mode = 0;
     self->stereowide_enabled = FALSE;
+    self->bs2b_enabled = FALSE;
+    self->bs2b_mode = 0;
 
     /* initialize private resources */
     self->effectDspMain = NULL;
@@ -369,6 +391,23 @@ gst_jdspfx_set_property(GObject *object, guint prop_id,
             self->stereowide_mode = g_value_get_int(value);
             command_set_px4_vx2x1(self->effectDspMain,
                                   137, (int16_t) self->stereowide_mode);
+            g_mutex_unlock(&self->lock);
+        } 
+            break;
+
+        case PROP_BS2B_ENABLE: {
+            g_mutex_lock(&self->lock);
+            self->bs2b_enabled = g_value_get_boolean(value);
+            command_set_px4_vx2x1(self->effectDspMain,
+                                  1208, self->bs2b_enabled);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+        case PROP_BS2B_MODE: {
+            g_mutex_lock(&self->lock);
+            self->bs2b_mode = g_value_get_int(value);
+            command_set_px4_vx2x1(self->effectDspMain,
+                                  188, (int16_t) self->bs2b_mode);
             g_mutex_unlock(&self->lock);
         }
             break;
