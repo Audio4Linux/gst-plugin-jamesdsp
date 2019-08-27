@@ -785,7 +785,7 @@ int32_t EffectDSPMain::command(uint32_t cmdCode, uint32_t cmdSize, void* pCmdDat
 		}
 		if (cep->psize == 4 && cep->vsize == 60)
 		{
-			int32_t cmd = ((int32_t *)cep)[3];
+			int32_t cmd = (int32_t)((float*)cep)[3];
 			if (cmd == 115)
 			{
 				double mBand[NUM_BANDS];

@@ -66,6 +66,10 @@ enum {
     PROP_COMPRESSOR_RATIO,
     PROP_COMPRESSOR_ATTACK,
     PROP_COMPRESSOR_RELEASE,
+    /* mixed equalizer */
+    PROP_TONE_ENABLE,
+    PROP_TONE_FILTERTYPE,
+    PROP_TONE_EQ,
 };
 
 #define ALLOWED_CAPS \
@@ -218,11 +222,28 @@ gst_jdspfx_class_init(GstjdspfxClass *klass) {
                                                      1, 1000, 24,
                                                      (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
 
+    /* mixed equalizer */
+
+    g_object_class_install_property(gobject_class, PROP_TONE_ENABLE,
+                                    g_param_spec_boolean("tone-enable", "EqEnabled",
+                                                         "Enable Equalizer",
+                                                         FALSE,
+                                                         (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property(gobject_class, PROP_TONE_FILTERTYPE,
+                                    g_param_spec_int("tone-filtertype", "EqFilter", "Equalizer filter type (Minimum/Linear phase)",
+                                                     0, 1, 0,
+                                                     (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+
+    g_object_class_install_property (gobject_class, PROP_TONE_EQ,
+                                     g_param_spec_string ("tone-eq", "EQCustom", "15-band EQ data (ex: 1200;50;-200;-500;-500;-500;-500;-450;-250;0;-300;-50;0;0;50) 100=1dB; min: -12dB, max: 12dB",
+                                                          "0;0;0;0;0;0;0;0;0;0;0;0;0;0;0", (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+
     gst_element_class_set_static_metadata(gstelement_class,
                                           "jdspfx",
                                           "Filter/Effect/Audio",
                                           "JamesDSP Core wrapper for GStreamer1",
                                           "ThePBone <tim.schneeberger@outlook.de>");
+
 
     caps = gst_caps_from_string(ALLOWED_CAPS);
     gst_audio_filter_class_add_pad_templates((GstAudioFilterClass * )GST_JDSPFX_CLASS (klass), caps);
@@ -299,7 +320,12 @@ static void sync_all_parameters(Gstjdspfx * self) {
     command_set_px4_vx2x1(self->effectDspMain,
                           1200, self->compression_enabled);
 
-
+    // mixed equalizer
+    command_set_eq (self->effectDspMain, self->tone_eq);
+    command_set_px4_vx2x1(self->effectDspMain,
+                          151, (int16_t)self->tone_filtertype);
+    command_set_px4_vx2x1(self->effectDspMain,
+                          1202, self->tone_enabled);
 }
 
 /* initialize the new element
@@ -334,7 +360,10 @@ gst_jdspfx_init(Gstjdspfx * self) {
     self->compression_attack = 1;
     self->compression_release = 24;
     self->compression_enabled = FALSE;
-
+    self->tone_filtertype = 0;
+    self->tone_enabled = FALSE;
+    memset (self->tone_eq, 0,
+            sizeof(self->tone_eq));
 
     /* initialize private resources */
     self->effectDspMain = NULL;
@@ -536,6 +565,37 @@ gst_jdspfx_set_property(GObject *object, guint prop_id,
         }
             break;
 
+        case PROP_TONE_ENABLE: {
+            g_mutex_lock(&self->lock);
+            self->tone_enabled = g_value_get_boolean(value);
+            command_set_px4_vx2x1(self->effectDspMain,
+                                  1202, self->tone_enabled);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+        case PROP_TONE_FILTERTYPE: {
+            g_mutex_lock(&self->lock);
+            self->tone_filtertype = g_value_get_int(value);
+            command_set_px4_vx2x1(self->effectDspMain,
+                                  151, (int16_t) self->tone_filtertype);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+        case PROP_TONE_EQ:
+        {
+            g_mutex_lock (&self->lock);
+            if (strlen (g_value_get_string (value)) < 64) {
+                memset (self->tone_eq, 0,
+                        sizeof(self->tone_eq));
+                strcpy(self->tone_eq,
+                       g_value_get_string (value));
+                command_set_eq (self->effectDspMain, self->tone_eq);
+            }else{
+                printf("[E] EQ string too long (>64 bytes)");
+            }
+            g_mutex_unlock (&self->lock);
+        }
+            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
             break;

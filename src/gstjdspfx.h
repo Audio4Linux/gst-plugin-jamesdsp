@@ -57,6 +57,11 @@ struct _Gstjdspfx {
     gint32 compression_attack;
     gint32 compression_release;
 
+    // mixed equalizer
+    gboolean tone_enabled;
+    gint32 tone_filtertype;
+    gchar tone_eq[64];
+
     /* < private > */
     EffectDSPMain *effectDspMain;
     void *so_handle;
