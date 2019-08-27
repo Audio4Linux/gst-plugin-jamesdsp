@@ -49,6 +49,12 @@ enum {
     PROP_BASS_MODE,
     PROP_BASS_FILTERTYPE,
     PROP_BASS_FREQ,
+    /* reverb */
+    PROP_HEADSET_ENABLE,
+    PROP_HEADSET_PRESET,
+   /* stereo wide */
+    PROP_STEREOWIDE_MODE,
+    PROP_STEREOWIDE_ENABLE,
 
 };
 
@@ -138,6 +144,27 @@ gst_jdspfx_class_init(GstjdspfxClass *klass) {
                                                      0, 1, 0,
                                                      (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
 
+    /* reverb */
+    g_object_class_install_property(gobject_class, PROP_HEADSET_ENABLE,
+                                    g_param_spec_boolean("headset-enable", "ReverbEnabled",
+                                                         "Enable reverbation",
+                                                         FALSE,
+                                                         (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property(gobject_class, PROP_HEADSET_PRESET,
+                                    g_param_spec_int("headset-preset", "ReverbPreset", "Reverb preset",
+                                                     0, 18, 8,
+                                                     (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+
+    /* stereo wide */
+    g_object_class_install_property(gobject_class, PROP_STEREOWIDE_ENABLE,
+                                    g_param_spec_boolean("stereowide-enable", "StereoWideEnabled",
+                                                         "Enable stereo widener",
+                                                         FALSE,
+                                                         (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property(gobject_class, PROP_STEREOWIDE_MODE,
+                                    g_param_spec_int("stereowide-mode", "StereoWideMode", "Stereo widener strength",
+                                                     0, 4, 0,
+                                                     (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
 
 
     gst_element_class_set_static_metadata(gstelement_class,
@@ -170,7 +197,7 @@ static void sync_all_parameters(Gstjdspfx * self) {
     command_set_px4_vx2x1(self->effectDspMain,
                           150, self->tube_enabled);
 
-    //bassboost
+    // bassboost
     command_set_px4_vx2x1(self->effectDspMain,
                           112, (int16_t)self->bass_mode);
 
@@ -182,6 +209,20 @@ static void sync_all_parameters(Gstjdspfx * self) {
 
     command_set_px4_vx2x1(self->effectDspMain,
                           1201, self->bass_enabled);
+
+    // reverb
+    command_set_px4_vx2x1(self->effectDspMain,
+                          128, (int16_t)self->headset_preset);
+
+    command_set_px4_vx2x1(self->effectDspMain,
+                          1203, self->headset_enabled);
+
+    // stereo wide
+    command_set_px4_vx2x1(self->effectDspMain,
+                          137, (int16_t)self->stereowide_mode);
+
+    command_set_px4_vx2x1(self->effectDspMain,
+                          1204, self->stereowide_enabled);
 }
 
 /* initialize the new element
@@ -196,9 +237,17 @@ gst_jdspfx_init(Gstjdspfx * self) {
 
     /* initialize properties */
     self->fx_enabled = FALSE;
-    // convolver
+
     self->tube_enabled = FALSE;
     self->tube_drive = 0;
+    self->bass_mode = 0;
+    self->bass_filtertype = 0;
+    self->bass_freq = 55;
+    self->bass_enabled = FALSE;
+    self->headset_preset = 0;
+    self->headset_enabled = FALSE;
+    self->stereowide_mode = 0;
+    self->stereowide_enabled = FALSE;
 
     /* initialize private resources */
     self->effectDspMain = NULL;
@@ -206,6 +255,8 @@ gst_jdspfx_init(Gstjdspfx * self) {
 
     if (self->effectDspMain != NULL)
         sync_all_parameters(self);
+
+    printf("\n--------INIT DONE--------\n\n");
 
     g_mutex_init(&self->lock);
 }
@@ -284,6 +335,40 @@ gst_jdspfx_set_property(GObject *object, guint prop_id,
             self->bass_freq = g_value_get_int(value);
             command_set_px4_vx2x1(self->effectDspMain,
                                   114, (int16_t) self->bass_freq);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+
+        case PROP_HEADSET_ENABLE: {
+            g_mutex_lock(&self->lock);
+            self->headset_enabled = g_value_get_boolean(value);
+            command_set_px4_vx2x1(self->effectDspMain,
+                                  1203, self->headset_enabled);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+        case PROP_HEADSET_PRESET: {
+            g_mutex_lock(&self->lock);
+            self->headset_preset = g_value_get_int(value);
+            command_set_px4_vx2x1(self->effectDspMain,
+                                  128, (int16_t) self->headset_preset);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+
+        case PROP_STEREOWIDE_ENABLE: {
+            g_mutex_lock(&self->lock);
+            self->stereowide_enabled = g_value_get_boolean(value);
+            command_set_px4_vx2x1(self->effectDspMain,
+                                  1204, self->stereowide_enabled);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+        case PROP_STEREOWIDE_MODE: {
+            g_mutex_lock(&self->lock);
+            self->stereowide_mode = g_value_get_int(value);
+            command_set_px4_vx2x1(self->effectDspMain,
+                                  137, (int16_t) self->stereowide_mode);
             g_mutex_unlock(&self->lock);
         }
             break;
@@ -372,7 +457,7 @@ gst_jdspfx_transform_ip(GstBaseTransform *base, GstBuffer *buf) {
             return GST_FLOW_OK;
 
 
-        printf("\n\n------BEGIN------\n");
+       // printf("\n\n------BEGIN------\n");
 
         gst_buffer_map(buf, &map, GST_MAP_READWRITE);
         num_samples = map.size / GST_AUDIO_FILTER_BPS(filter) / 2;
@@ -391,7 +476,7 @@ gst_jdspfx_transform_ip(GstBaseTransform *base, GstBuffer *buf) {
             //in->s16[idx] = pcm_data[idx];
             //printf("%d ", in->s16[idx]);
             in->f32[idx] = pcm_data[idx];
-            printf("%f ", in->f32[idx]);
+            //printf("%f ", in->f32[idx]);
         }
 
         audio_buffer_t *out = (audio_buffer_t *) malloc(sizeof(size_t));
@@ -399,7 +484,7 @@ gst_jdspfx_transform_ip(GstBaseTransform *base, GstBuffer *buf) {
         //out->s16 = (int16_t *) malloc(2 * num_samples * sizeof(int16_t));
         out->f32 = (float*) malloc(2 * num_samples * sizeof(float));
 
-        printf("\n\n\n");
+        //printf("\n\n\n");
 
         g_mutex_lock(&filter->lock);
         filter->effectDspMain->process(in, out);
@@ -411,11 +496,11 @@ gst_jdspfx_transform_ip(GstBaseTransform *base, GstBuffer *buf) {
 
             } else printf("Index %d is null (outputbuffer) :(\n", idx);*/
             if (out->f32[idx]) {
-                printf("%f ", out->f32[idx]);
+                //printf("%f ", out->f32[idx]);
                 pcm_data[idx] = out->f32[idx];
             } else printf("Index %d is null (outputbuffer) :(\n", idx);
         }
-        printf("\n------END------");
+        //printf("\n------END------");
 
         gst_buffer_unmap(buf, &map);
         delete in;

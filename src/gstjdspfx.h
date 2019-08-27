@@ -36,6 +36,14 @@ struct _Gstjdspfx {
     gint32 bass_filtertype;
     gint32 bass_freq;
 
+    // reverb
+    gboolean headset_enabled;
+    gint32 headset_preset;
+
+    // stereo wide
+    gboolean stereowide_enabled;
+    gint32 stereowide_mode;
+
     /* < private > */
     EffectDSPMain *effectDspMain;
     void *so_handle;
