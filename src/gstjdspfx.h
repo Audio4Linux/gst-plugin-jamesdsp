@@ -66,6 +66,10 @@ struct _Gstjdspfx {
     gfloat lim_threshold;
     gfloat lim_release;
 
+    // ddc
+    gboolean ddc_enabled;
+    gchar ddc_coeffs[4096];
+
     /* < private > */
     EffectDSPMain *effectDspMain;
     void *so_handle;

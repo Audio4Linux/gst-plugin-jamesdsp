@@ -1,7 +1,10 @@
 # JamesDSP for Linux
-This is very experimental and obviously work in progress.
-Currently analog modelling, bass boost, bs2b, limiter, compression, reverbation and the stereo widener is implemented, and the plugin might produce crackling output if the samplerate is set incorrectly.
 ###### (OpenSource Version)
+This is experimental and obviously work in progress.
+Currently everything (analog modelling, bass boost, bs2b, VDC/DDCs, limiter, compression, reverbation and the stereo widener), except the convolver is implemented, and the plugin might produce crackling output if the samplerate is set incorrectly.
+
+
+__This is the repo of the gst-plugin. You might want to visit the [main repository](https://github.com/ThePBone/JDSP4Linux)__
 
 ## Workarounds
 ### Fix crackling/choppy sound
@@ -14,8 +17,8 @@ Replace this line:
 with this one:
 `default-sample-rate = 48000`
 ## Launch it
-I will provide more details and update this readme later...
-	
+You can find more information in the [main repo](https://github.com/ThePBone/JDSP4Linux).
+   	
 	gst-launch-1.0 -v pulsesrc device=[INPUTSINK].monitor volume=1.0 \
 	! audio/x-raw,channels=2,rate=44100,format=F32LE,endianness=1234 \
 	! audioconvert \

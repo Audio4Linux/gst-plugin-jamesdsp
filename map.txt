@@ -21,19 +21,18 @@ px4_vx2
 	*1206 analogmodelling.enable
 	*1202 tone.enable
 	*151 tone.filtertype 0
+	*1212 ddc.enable
 	1205 convolver.enable
 	
-	1212 ddc.enable
-
 	10003 <Increment sliced buffer (convolver)>
 	10004 <Notify array transmit completed (convolver)>
-	10005 <Increment sliced buffer (ddc)>
-	10009 <Notify array transmit completed (ddc)>
+	x10005 <Increment sliced buffer (ddc)>
+	x10009 <Notify array transmit completed (ddc)>
 
 px4_vx8
 	*1500 {masterswitch.limthreshold,masterswitch.limrelease} float[2]
 
-	8888 <Send buffer info/Allocate memory>
+	x8888 <Send buffer info/Allocate memory>
 
 px4_vx16
 	9999 <Send buffer info/Allocate memory>
@@ -46,14 +45,15 @@ px4_vx40
 	1998 <Convolver/Benchmark stuff>
 
 px4_vx256
-	12001 <Commit buffer (ddc)>
+	x12001 <Commit buffer (ddc)>
 
 px4_vx16384
 	12000 <Commit buffer (convolver)>
 
 /*****************************************
-	 JamesDSP command map
-       * = implemented on linux
+	  JamesDSP command map
+     * = implemented on linux
+      x = not needed on linux
 
 	       ThePBone		
 ******************************************/

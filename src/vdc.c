@@ -27,7 +27,15 @@ void SOS_DF2_StereoProcess(DirectForm2 *df2, double x1, double x2, double *Out_y
 }
 int countChars(char* s, char c)
 {
-	return *s == '\0' ? 0 : countChars(s + 1, c) + (*s == c);
+    int res = 0;
+    if(s==NULL){
+        printf("[E] CountChars/DDCParser: input buffer is null\n");
+        return;
+    }
+    for (int i=0;i<strlen(s);i++)
+        if (s[i] == c)
+            res++;
+    return res;
 }
 int get_doubleVDC(char *val, double *F)
 {
@@ -43,8 +51,10 @@ int get_doubleVDC(char *val, double *F)
 }
 int DDCParser(char *DDCString, DirectForm2 ***ptrdf441, DirectForm2 ***ptrdf48)
 {
+
 	char *fs44_1 = strstr(DDCString, "SR_44100");
 	char *fs48 = strstr(DDCString, "SR_48000");
+
 	int numberCount = (countChars(fs48, ',') + 1);
 	int sosCount = numberCount / 5;
 	DirectForm2 **df441 = (DirectForm2**)malloc(sosCount * sizeof(DirectForm2*));

@@ -1,22 +1,17 @@
-#ifdef DEBUG
-#define TAG "EffectDSPMain"
-#define LOGI(...) printf("[%s] %s","I",__VA_ARGS__)
-#define LOGE(...) printf("[%s] %s","E",__VA_ARGS__)
-#endif
 #include "Effect.h"
 
 Effect::Effect()
     : mSamplingRate(48000.0), formatFloatModeInt32Mode(0)
 {
 #ifdef DEBUG
-	LOGI("Effect class created");
+	printf("[I] Effect class created\n");
 #endif
 }
 
 Effect::~Effect()
 {
 #ifdef DEBUG
-	LOGI("Effect class destroyed");
+	printf("[I] Effect class destroyed\n");
 #endif
 }
 
@@ -35,14 +30,14 @@ int32_t Effect::configure(void* pCmdData, effect_buffer_access_e* mAccessMode)
     /* Check that we aren't asked to do resampling. Note that audioflinger
      * always provides full setup info at initial configure time. */
     /*#ifdef DEBUG
-          LOGE("Sample rate of In: %u and out: %u", in.samplingRate, out.samplingRate);
+          printf("[E] Sample rate of In: %u and out: %u", in.samplingRate, out.samplingRate);
   #endif
       if ((in.mask & EFFECT_CONFIG_SMP_RATE) && (out.mask & EFFECT_CONFIG_SMP_RATE))
       {
           if (out.samplingRate != in.samplingRate)
           {
   #ifdef DEBUG
-      LOGE("In/out sample rate doesn't match");
+      printf("[E] In/out sample rate doesn't match");
   #endif
       return -EINVAL;
           }
@@ -53,14 +48,14 @@ int32_t Effect::configure(void* pCmdData, effect_buffer_access_e* mAccessMode)
           if (in.channels != AUDIO_CHANNEL_OUT_STEREO)
           {
   #ifdef DEBUG
-      LOGE("Input is non stereo signal. It's channel count is %u", in.channels);
+      printf("[E] Input is non stereo signal. It's channel count is %u", in.channels);
   #endif
               return -EINVAL;
           }
           if (out.channels != AUDIO_CHANNEL_OUT_STEREO)
           {
   #ifdef DEBUG
-      LOGE("Output is non stereo signal. It's channel count is %u", out.channels);
+      printf("[E] Output is non stereo signal. It's channel count is %u", out.channels);
   #endif
               return -EINVAL;
           }
@@ -68,7 +63,7 @@ int32_t Effect::configure(void* pCmdData, effect_buffer_access_e* mAccessMode)
       else
       {
   #ifdef DEBUG
-      LOGE("In/out channel mask doesn't match");
+      printf("[E] In/out channel mask doesn't match");
   #endif
       }
       if (in.mask & EFFECT_CONFIG_FORMAT)
@@ -80,7 +75,7 @@ int32_t Effect::configure(void* pCmdData, effect_buffer_access_e* mAccessMode)
               else if (in.format == AUDIO_FORMAT_PCM_32_BIT)
                   formatFloatModeInt32Mode = 2;
   #ifdef DEBUG
-      LOGE("Input is not 16 bit PCM. FMT is %u", in.format);
+      printf("[E] Input is not 16 bit PCM. FMT is %u", in.format);
   #endif
           }
       }
@@ -93,7 +88,7 @@ int32_t Effect::configure(void* pCmdData, effect_buffer_access_e* mAccessMode)
               else if (in.format == AUDIO_FORMAT_PCM_32_BIT)
                   formatFloatModeInt32Mode = 2;
   #ifdef DEBUG
-      LOGE("Output is not 16 bit PCM. FMT is %u", in.format);
+      printf("[E] Output is not 16 bit PCM. FMT is %u\n", in.format);
   #endif
           }
       }

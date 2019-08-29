@@ -1,8 +1,5 @@
 #include "global.h"
 #ifdef DEBUG
-#define TAG "EffectDSPMain"
-#define LOGI(...) printf("[%s] %s","I",__VA_ARGS__)
-#define LOGE(...) printf("[%s] %s","E",__VA_ARGS__)
 #include "MemoryUsage.h"
 #endif
 #include <unistd.h>
@@ -38,7 +35,7 @@ EffectDSPMain::EffectDSPMain()
 	tempBuf[0] = (double*)malloc(memSize);
 	tempBuf[1] = (double*)malloc(memSize);
 #ifdef DEBUG
-	LOGI("%d space allocated", DSPbufferLength);
+	printf("[I] %d space allocated\n", DSPbufferLength);
 #endif
 	JLimiterInit(&kLimiter);
 	JLimiterSetCoefficients(&kLimiter, -0.1, 60.0, mSamplingRate);
@@ -92,7 +89,7 @@ EffectDSPMain::~EffectDSPMain()
 		}
 	}
 #ifdef DEBUG
-	LOGI("Buffer freed");
+	printf("[I] Buffer freed\n");
 #endif
 }
 void EffectDSPMain::FreeBassBoost()
@@ -180,7 +177,7 @@ void EffectDSPMain::channel_splitFloat(const float *buffer, unsigned int num_fra
 int32_t EffectDSPMain::command(uint32_t cmdCode, uint32_t cmdSize, void* pCmdData, uint32_t* replySize, void* pReplyData)
 {
 #ifdef DEBUG
-	LOGI("Memory used: %lf Mb", (double)getCurrentRSS() / 1024.0 / 1024.0);
+	printf("[I] Memory used: %lf Mb\n", (double)getCurrentRSS() / 1024.0 / 1024.0);
 #endif
 	if (cmdCode == EFFECT_CMD_SET_CONFIG)
 	{
@@ -296,11 +293,12 @@ int32_t EffectDSPMain::command(uint32_t cmdCode, uint32_t cmdSize, void* pCmdDat
 		effect_param_t *cep = (effect_param_t *)pCmdData; //cmdData -> effect_param_t
 		int32_t *replyData = (int32_t *)pReplyData;
 
-		///DEBUG
+#ifdef DEBUG
         int32_t _cmd = ((int32_t *)cep)[3];
         int16_t _dat = ((int16_t *)cep)[8];
-		printf("\n\npsize: %lu\nvsize: %lu\ncmd: %lu\ndata: %d\n\n",(unsigned long)cep->psize,(unsigned long)cep->vsize,(unsigned long)_cmd,(int)_dat);
-		////////
+        printf("[CMD] psize: %lu, vsize: %lu, cmd: %lu, data: %d\n",(unsigned long)cep->psize,(unsigned long)cep->vsize,(unsigned long)_cmd,(int)_dat);
+#endif
+
 
 		if (cep->psize == 4 && cep->vsize == 2)
 		{
@@ -456,11 +454,11 @@ int32_t EffectDSPMain::command(uint32_t cmdCode, uint32_t cmdSize, void* pCmdDat
 					eqFilterType = value;
 					eqFIRReady = 2;
 #ifdef DEBUG
-					LOGI("EQ filter type: %d", eqFilterType);
+					printf("[I] EQ filter type: %d\n", eqFilterType);
 #endif
 					FreeEq();
 #ifdef DEBUG
-					LOGI("FIR EQ reseted caused by filter type change");
+					printf("[I] FIR EQ reseted caused by filter type change\n");
 #endif
 				}
                 if(replyData!=NULL)*replyData = 0;
@@ -493,7 +491,7 @@ int32_t EffectDSPMain::command(uint32_t cmdCode, uint32_t cmdSize, void* pCmdDat
 			Wavechild670WarmUp(compressor670, 0.5);
 			wavechild670Enabled = 1;
 			#ifdef DEBUG
-			LOGI("Compressor670 Initialised");
+			printf("[I] Compressor670 Initialised\n");
 			#endif
 			}
 			if(replyData!=NULL)*replyData = 0;
@@ -536,7 +534,7 @@ int32_t EffectDSPMain::command(uint32_t cmdCode, uint32_t cmdSize, void* pCmdDat
 					for (int i = 0; i < 1024; i++)
 						ArbitraryEqInsertNode(arbEq, xaxis[i], 0.0, 0);
 #ifdef DEBUG
-					LOGI("FIR EQ Initialised");
+					printf("[I] FIR EQ Initialised\n");
 #endif
 				}
 				else if (!equalizerEnabled && (oldVal != equalizerEnabled))
@@ -544,7 +542,7 @@ int32_t EffectDSPMain::command(uint32_t cmdCode, uint32_t cmdSize, void* pCmdDat
 					eqFIRReady = 0;
 					FreeEq();
 #ifdef DEBUG
-					LOGI("FIR EQ destroyed");
+					printf("[I] FIR EQ destroyed\n");
 #endif
 				}
                 if(replyData!=NULL)*replyData = 0;
@@ -616,7 +614,7 @@ int32_t EffectDSPMain::command(uint32_t cmdCode, uint32_t cmdSize, void* pCmdDat
 					viperddcEnabled = ((int16_t *)cep)[8];
 				}
 #ifdef DEBUG
-				LOGI("viperddcEnabled: %d", viperddcEnabled);
+				printf("[I] viperddcEnabled: %d\n", viperddcEnabled);
 #endif
 				if (!viperddcEnabled && oldVal)
 				{
@@ -751,12 +749,12 @@ int32_t EffectDSPMain::command(uint32_t cmdCode, uint32_t cmdSize, void* pCmdDat
 					}
 				}
 #ifdef DEBUG
-				LOGI("%s", stringEq);
+				printf("[I] %s\n", stringEq);
 #endif
 				sosCount = DDCParser(stringEq, &df441, &df48);
 #ifdef DEBUG
-			LOGI("VDC num of SOS: %d", sosCount);
-			LOGI("VDC df48[0].b0: %1.14lf", df48[0]->b0);
+			printf("[I] VDC num of SOS: %d\n", sosCount);
+			printf("[I] VDC df48[0].b0: %1.14lf\n", df48[0]->b0);
 #endif
 				free(stringEq);
 				stringEq = 0;
@@ -777,7 +775,7 @@ int32_t EffectDSPMain::command(uint32_t cmdCode, uint32_t cmdSize, void* pCmdDat
 					limRelease = 0.15;
 				JLimiterSetCoefficients(&kLimiter, limThreshold, limRelease, (double)mSamplingRate);
 #ifdef DEBUG
-				printf("limThreshold: %f, limRelease: %f", (float)limThreshold, (float)limRelease);
+				printf("[I] limThreshold: %f, limRelease: %f\n", (float)limThreshold, (float)limRelease);
 #endif
                 if(replyData!=NULL)*replyData = 0;
 				return 0;
@@ -807,7 +805,7 @@ int32_t EffectDSPMain::command(uint32_t cmdCode, uint32_t cmdSize, void* pCmdDat
 					{
 						benchmarkValue[0][i] = (double)((float*)cep)[4 + i];
 #ifdef DEBUG
-						//						LOGI("bench_c0: %lf", benchmarkValue[0][i]);
+						//						printf("[I] bench_c0: %lf\n", benchmarkValue[0][i]);
 #endif
 					}
 					isBenchData++;
@@ -827,7 +825,7 @@ int32_t EffectDSPMain::command(uint32_t cmdCode, uint32_t cmdSize, void* pCmdDat
 					{
 						benchmarkValue[1][i] = (double)((float*)cep)[4 + i];
 #ifdef DEBUG
-						//						LOGI("bench_c1: %lf", benchmarkValue[1][i]);
+						//						printf("[I] bench_c1: %lf\n", benchmarkValue[1][i]);
 #endif
 					}
 					isBenchData++;
@@ -863,7 +861,7 @@ int32_t EffectDSPMain::command(uint32_t cmdCode, uint32_t cmdSize, void* pCmdDat
 				int32_t sizePerBuffer = ((int32_t *)cep)[5];
 				stringLength = times * sizePerBuffer;
 #ifdef DEBUG
-				LOGI("Allocate %d stringLength", stringLength);
+				printf("[I] Allocate %d stringLength\n", stringLength);
 #endif
 				stringEq = (char*)calloc(stringLength, sizeof(char));
                 if(replyData!=NULL)*replyData = 0;
@@ -903,7 +901,7 @@ int32_t EffectDSPMain::command(uint32_t cmdCode, uint32_t cmdSize, void* pCmdDat
 			if (cmd == 12001)
 			{
 #ifdef DEBUG
-				LOGI("Copying string");
+				printf("[I] Copying string\n");
 #endif
 				memcpy(stringEq + (stringIndex * 256), ((char*)cep) + 16, 256 * sizeof(char));
                 if(replyData!=NULL)*replyData = 0;
@@ -936,9 +934,9 @@ void EffectDSPMain::refreshBassLinearPhase(uint32_t DSPbufferLength, uint32_t ta
 	double amplitude[4] = { strength, strength, 0, 0 };
 	double *freqSamplImp = fir2(&filterLength, freq, amplitude, 4);
 #ifdef DEBUG
-	LOGI("filterLength: %d", filterLength);
+	printf("[I] filterLength: %d\n", filterLength);
 	if (!freqSamplImp)
-		LOGI("Pointer freqSamplImp is invalid");
+		printf("[I] Pointer freqSamplImp is invalid\n");
 #endif
 	unsigned int i;
 	if (!bassBoostLp)
@@ -955,7 +953,7 @@ void EffectDSPMain::refreshBassLinearPhase(uint32_t DSPbufferLength, uint32_t ta
 	}
 	free(freqSamplImp);
 #ifdef DEBUG
-	LOGI("Linear phase bass boost allocate all done: total taps %d", filterLength);
+	printf("[I] Linear phase bass boost allocate all done: total taps %d\n", filterLength);
 #endif
 	bassLpReady = 1;
 }
@@ -964,7 +962,7 @@ int EffectDSPMain::refreshConvolver(uint32_t DSPbufferLength)
 	if (!finalImpulse)
 		return 0;
 #ifdef DEBUG
-	LOGI("refreshConvolver::IR channel count:%d, IR frame count:%d, Audio buffer size:%d", impChannels, impulseLengthActual, DSPbufferLength);
+	printf("[I] refreshConvolver::IR channel count:%d, IR frame count:%d, Audio buffer size:%d\n", impChannels, impulseLengthActual, DSPbufferLength);
 #endif
 	int i;
 	FreeConvolver();
@@ -998,7 +996,7 @@ int EffectDSPMain::refreshConvolver(uint32_t DSPbufferLength)
 			else
 				convolverReady = 2;
 #ifdef DEBUG
-			LOGI("Convolver strategy used: %d", convolver[0]->methods);
+			printf("[I] Convolver strategy used: %d\n", convolver[0]->methods);
 #endif
 		}
 		else if (impChannels == 4)
@@ -1026,12 +1024,12 @@ int EffectDSPMain::refreshConvolver(uint32_t DSPbufferLength)
 			else
 				convolverReady = 4;
 #ifdef DEBUG
-			LOGI("Convolver strategy used: %d", fullStereoConvolver[0]->methods);
+			printf("[I] Convolver strategy used: %d\n", fullStereoConvolver[0]->methods);
 #endif
 		}
 		ramp = 0.4;
 #ifdef DEBUG
-		LOGI("Convolver IR allocate complete");
+		printf("[I] Convolver IR allocate complete\n");
 #endif
 	}
 	return 1;
@@ -1072,7 +1070,7 @@ void EffectDSPMain::refreshEqBands(uint32_t DSPbufferLength, double *bands)
 	if (!arbEq || !xaxis || !yaxis)
 		return;
 #ifdef DEBUG
-	LOGI("Allocating FIR Equalizer");
+	printf("[I] Allocating FIR Equalizer\n");
 #endif
 	double y2[NUM_BANDS];
 	double workingBuf[NUM_BANDSM1]; // interpFreq or bands data length minus 1
@@ -1094,7 +1092,7 @@ void EffectDSPMain::refreshEqBands(uint32_t DSPbufferLength, double *bands)
 			UpdateAutoConvolver1x1ZeroLatency(FIREq[i], eqImpulseResponse, eqfilterLength);
 	}
 #ifdef DEBUG
-	LOGI("FIR Equalizer allocate all done: total taps %d", eqfilterLength);
+	printf("[I] FIR Equalizer allocate all done: total taps %d\n", eqfilterLength);
 #endif
 	eqFIRReady = 1;
 }
@@ -1395,6 +1393,7 @@ int32_t EffectDSPMain::process(audio_buffer_t *in, audio_buffer_t *out)
 					}
 				}
 				else
+
 				{
 					memcpy(outputBuffer[0], inputBuffer[0], memSize);
 					memcpy(outputBuffer[1], inputBuffer[1], memSize);
@@ -1540,4 +1539,44 @@ int32_t EffectDSPMain::process(audio_buffer_t *in, audio_buffer_t *out)
 	}
 	inOutRWPosition = pos;
 	return mEnable ? 0 : -ENODATA;
+}
+void EffectDSPMain::_loadDDC(char* ddc_str){
+
+    stringEq = (char*)calloc(strlen(ddc_str), sizeof(char));
+    strcpy(stringEq,ddc_str);
+    if (!viperddcEnabled)
+    {
+        if (sosCount)
+        {
+            for (int i = 0; i < sosCount; i++)
+            {
+                free(df441[i]);
+                free(df48[i]);
+            }
+            free(df441);
+            df441 = 0;
+            free(df48);
+            df48 = 0;
+            sosCount = 0;
+            if (resampledSOSCount)
+            {
+                for (int i = 0; i < resampledSOSCount; i++)
+                    free(dfResampled[i]);
+                free(dfResampled);
+                dfResampled = 0;
+                resampledSOSCount = 0;
+            }
+            sosPointer = 0;
+        }
+    }
+
+    sosCount = DDCParser(stringEq, &df441, &df48);
+
+#ifdef DEBUG
+    printf("[I] VDC num of SOS: %d\n", sosCount);
+	printf("VDC df48[0].b0: %1.14f\n", (float)df48[0]->b0);
+#endif
+    free(stringEq);
+    stringEq = 0;
+    return;
 }

@@ -73,6 +73,9 @@ enum {
     /* limiter */
     PROP_MASTER_LIMTHRESHOLD,
     PROP_MASTER_LIMRELEASE,
+    /* ddc */
+    PROP_DDC_ENABLE,
+    PROP_DDC_COEFFS
 
 };
 
@@ -255,6 +258,15 @@ gst_jdspfx_class_init(GstjdspfxClass *klass) {
                                                         1.5, 2000, 60,
                                                        (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
 
+    /* ddc */
+    g_object_class_install_property(gobject_class, PROP_DDC_ENABLE,
+                                    g_param_spec_boolean("ddc-enable", "DDCEnabled",
+                                                         "Enable DDC",
+                                                         FALSE,
+                                                         (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property (gobject_class, PROP_DDC_COEFFS,
+                                     g_param_spec_string ("ddc-file", "DDCFileCoeffs", "DDC filepath",
+                                                          "", (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
 
 
 
@@ -349,6 +361,12 @@ static void sync_all_parameters(Gstjdspfx * self) {
 
     // limiter
     command_set_limiter(self->effectDspMain,self->lim_threshold,self->lim_release);
+
+    // ddc
+    command_set_ddc(self->effectDspMain,self->ddc_coeffs,self->ddc_enabled);
+    command_set_px4_vx2x1(self->effectDspMain,
+                          1212, self->ddc_enabled);
+
 }
 
 /* initialize the new element
@@ -389,6 +407,10 @@ gst_jdspfx_init(Gstjdspfx * self) {
             sizeof(self->tone_eq));
     self->lim_threshold = 0;
     self->lim_release = 60;
+    self->ddc_enabled = FALSE;
+    memset (self->ddc_coeffs, 0,
+            sizeof(self->ddc_coeffs));
+
     /* initialize private resources */
     self->effectDspMain = NULL;
     self->effectDspMain = new EffectDSPMain();
@@ -636,6 +658,24 @@ gst_jdspfx_set_property(GObject *object, guint prop_id,
             g_mutex_unlock (&self->lock);
         }
             break;
+        case PROP_DDC_ENABLE: {
+            g_mutex_lock(&self->lock);
+            self->ddc_enabled = g_value_get_boolean(value);
+            command_set_px4_vx2x1(self->effectDspMain,
+                                  1212, self->ddc_enabled);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+        case PROP_DDC_COEFFS: {
+            g_mutex_lock(&self->lock);
+            memset (self->ddc_coeffs , 0,
+                    sizeof(self->ddc_coeffs ));
+            strcpy(self->ddc_coeffs ,
+                   g_value_get_string (value));
+            command_set_ddc(self->effectDspMain, self->ddc_coeffs,self->ddc_enabled);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
             break;
@@ -762,13 +802,16 @@ gst_jdspfx_transform_ip(GstBaseTransform *base, GstBuffer *buf) {
             if (out->f32[idx]) {
                 //printf("%f ", out->f32[idx]);
                 pcm_data[idx] = out->f32[idx];
-            } else printf("Index %d is null (outputbuffer) :(\n", idx);
+            } //else printf("Index %d is null (outputbuffer) :(\n", idx);
         }
         //printf("\n------END------");
 
         gst_buffer_unmap(buf, &map);
+        delete in->f32;
+        delete out->f32;
         delete in;
         delete out;
+
     }
 
     return GST_FLOW_OK;
