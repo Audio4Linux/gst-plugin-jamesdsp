@@ -92,8 +92,16 @@ void command_set_px4_vx256x1(EffectDSPMain *intf,int32_t cmd,const char *buffer)
 }
 ///Load and send DDC data
 void command_set_ddc(EffectDSPMain *intf,char* path,bool enabled){
-    if(!path){
+    if(!path || path == ""){
         printf("[E] DDC path is NULL\n");
+        return;
+    }
+    int sum = 0;
+    for (int i = 0; i < strlen(path); ++i) {
+        sum |= path[i];
+    }
+    if (sum == 0) {
+        printf("[E] DDC path char array contains zero data\n");
         return;
     }
     char *ddcString = memory_read_ascii(path);
@@ -175,6 +183,7 @@ char* memory_read_ascii(char *path){
         fclose(file);
         return buffer;
     }
+    return NULL;
 }
 ///Replace all occurrences of 'str' with 'rep' in 'src'
 void helper_strreplace(char *target, const char *needle, const char *replacement)
