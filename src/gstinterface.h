@@ -92,21 +92,29 @@ void command_set_px4_vx256x1(EffectDSPMain *intf,int32_t cmd,const char *buffer)
 }
 ///Load and send DDC data
 void command_set_ddc(EffectDSPMain *intf,char* path,bool enabled){
-    if(!path || path == ""){
+    if(!path || path == NULL){
         printf("[E] DDC path is NULL\n");
         return;
     }
-    int sum = 0;
+    int p = 0;
     for (int i = 0; i < strlen(path); ++i) {
-        sum |= path[i];
+        p |= path[i];
     }
-    if (sum == 0) {
+    if (p == 0) {
         printf("[E] DDC path char array contains zero data\n");
         return;
     }
     char *ddcString = memory_read_ascii(path);
     if(!ddcString || ddcString == NULL){
         printf("[E] File reader returned a null pointer. Probably unable to open DDC file\n");
+        return;
+    }
+    int d = 0;
+    for (int i = 0; i < strlen(ddcString); ++i) {
+        d |= ddcString[i];
+    }
+    if (d == 0) {
+        printf("[E] DDC coeffs char array contains zero data\n");
         return;
     }
     int begin = strcspn(ddcString,"S");
