@@ -28,13 +28,18 @@ with this one:
 `default-sample-rate = 48000`
 ## Launch it
 You can find more information in the [main repo](https://github.com/ThePBone/JDSP4Linux).
-   	
+   
+   	gst-launch-1.0 -v pulsesrc device=[INPUTSINK].monitor volume=1.0 \
+	! jdspfx enable="true" analogmodelling-enable="true" analogmodelling-tubedrive="6000" \
+	! pulsesink device=[OUTPUTSINK] &	
+	
+Use this pipeline if the input sink is using an unsupported format:
+
 	gst-launch-1.0 -v pulsesrc device=[INPUTSINK].monitor volume=1.0 \
 	! audio/x-raw,channels=2,rate=44100,format=F32LE,endianness=1234 \
 	! audioconvert \
 	! jdspfx enable="true" analogmodelling-enable="true" analogmodelling-tubedrive="6000" \
-	! audio/x-raw,channels=2,rate=44100,format=F32LE,endianness=1234 \
-	! audioconvert ! pulsesink device=[OUTPUTSINK] &
+	! pulsesink device=[OUTPUTSINK] &
 This wrapper is based on [gst-plugin-viperfx](https://github.com/ThePBone/gst-plugin-viperfx)
 
 
