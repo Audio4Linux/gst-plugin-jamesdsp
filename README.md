@@ -6,6 +6,16 @@ Currently everything (analog modelling, bass boost, bs2b, VDC/DDCs, limiter, com
 
 __This is the repo of the gst-plugin. You might want to visit the [main repository](https://github.com/ThePBone/JDSP4Linux)__
 
+## AUR package
+
+yochananmarqos made an [AUR package](https://aur.archlinux.org/packages/gst-plugin-jamesdsp-git/) for this repo:
+```bash
+yay -S gst-plugin-jamesdsp-git
+```
+Note: This package alone does not install JDSP for you. Installation instructions can be found in the main repository!
+
+![AUR version](https://img.shields.io/aur/version/gst-plugin-jamesdsp-git?label=aur)
+
 ## Workarounds
 ### Fix crackling/choppy sound
 _Set the default samplerate to 48000Hz in pulseaudio's config:_
