@@ -91,4 +91,10 @@ public:
 	int32_t command(uint32_t cmdCode, uint32_t cmdSize, void* pCmdData, uint32_t* replySize, void* pReplyData);
 	int32_t process(audio_buffer_t *in, audio_buffer_t *out);
 	void _loadDDC(char*);
+
 };
+typedef struct dsp_config_s
+{
+    uint32_t   samplingRate;    // sampling rate
+    uint8_t    format;          // Audio format
+} dsp_config_t;

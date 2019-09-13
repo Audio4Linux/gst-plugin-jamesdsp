@@ -1,4 +1,5 @@
 #include "Effect.h"
+#include "EffectDSPMain.h"
 
 Effect::Effect()
     : mSamplingRate(48000.0), formatFloatModeInt32Mode(0)
@@ -18,15 +19,18 @@ Effect::~Effect()
 /* Configure a bunch of general parameters. */
 int32_t Effect::configure(void* pCmdData, effect_buffer_access_e* mAccessMode)
 {
-    ////GST DOES NOT NEED FURTHER CONFIGURING, SKIPPING FOR NOW
-    double *sr = (double*)(&pCmdData);
-    mSamplingRate = *sr;
+    ////Gst handles most of this checks here already
     *mAccessMode = (effect_buffer_access_e) EFFECT_BUFFER_ACCESS_ACCUMULATE;
+
+    dsp_config_t *cfg = (dsp_config_t*)pCmdData;
+    formatFloatModeInt32Mode = cfg->format;
+    mSamplingRate = cfg->samplingRate;
+
+    printf("[I] Samplerate updated: %d\n",(int)mSamplingRate);
+    printf("[I] Float/Int mode updated: %d\n",formatFloatModeInt32Mode);
     return 0;
 
-    /*effect_config_t *cfg = (effect_config_t*)pCmdData;
-    buffer_config_t in = cfg->inputCfg;
-    buffer_config_t out = cfg->outputCfg;*/
+    /**/
     /* Check that we aren't asked to do resampling. Note that audioflinger
      * always provides full setup info at initial configure time. */
     /*#ifdef DEBUG

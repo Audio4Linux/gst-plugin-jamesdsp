@@ -16,11 +16,22 @@ G_BEGIN_DECLS
 #define GST_IS_JDSPFX(obj)         (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_JDSPFX))
 #define GST_IS_JDSPFX_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE((klass) ,GST_TYPE_JDSPFX))
 
+enum formats{
+    notready = 0x0,
+    s16le,
+    f32le,
+    s32le,
+    other
+};
+
+
 typedef struct _Gstjdspfx Gstjdspfx;
 typedef struct _GstjdspfxClass GstjdspfxClass;
 
 struct _Gstjdspfx {
     GstAudioFilter audiofilter;
+    gint samplerate = 0;
+    guint format = 0;
 
     /* properties */
     // global enable

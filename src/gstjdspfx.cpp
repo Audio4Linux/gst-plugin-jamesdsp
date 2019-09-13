@@ -81,8 +81,8 @@ enum {
 
 #define ALLOWED_CAPS \
   "audio/x-raw,"                            \
-  " format=(string){"GST_AUDIO_NE(F32)"},"  \
-  " rate=(int)[44100,MAX],"                 \
+  " format=(string){"GST_AUDIO_NE(F32)","GST_AUDIO_NE(S32)"},"  \
+  " rate=(int){44100,48000},"                 \
   " channels=(int)2,"                       \
   " layout=(string)interleaved"
 
@@ -278,6 +278,8 @@ gst_jdspfx_class_init(GstjdspfxClass *klass) {
 
 
     caps = gst_caps_from_string(ALLOWED_CAPS);
+
+
     gst_audio_filter_class_add_pad_templates((GstAudioFilterClass * )GST_JDSPFX_CLASS (klass), caps);
     gst_caps_unref(caps);
     audioself_class->setup = GST_DEBUG_FUNCPTR(gst_jdspfx_setup);
@@ -705,24 +707,16 @@ gst_jdspfx_setup(GstAudioFilter *base, const GstAudioInfo *info) {
     if (self->effectDspMain == NULL)
         return FALSE;
 
+
     if (info) {
         sample_rate = GST_AUDIO_INFO_RATE(info);
     } else {
         sample_rate = GST_AUDIO_FILTER_RATE(self);
     }
-    if (sample_rate <= 0)
+    if (sample_rate <= 0){
         return FALSE;
+    }
 
-    GST_DEBUG_OBJECT(self, "current sample_rate = %d", sample_rate);
-
-    g_mutex_lock(&self->lock);
-
-    config_set_px0_vx0x0(self->effectDspMain, EFFECT_CMD_INIT);
-    self->effectDspMain->command(EFFECT_CMD_SET_CONFIG, (uint32_t)
-    sizeof(double), (void *) sample_rate, NULL, NULL);
-
-    //self->effectDspMain->command(EFFECT_CMD_RESET,NULL,NULL,NULL,NULL);
-    g_mutex_unlock(&self->lock);
 
     return TRUE;
 }
@@ -742,13 +736,47 @@ gst_jdspfx_stop(GstBaseTransform *base) {
  */
 static GstFlowReturn
 gst_jdspfx_transform_ip(GstBaseTransform *base, GstBuffer *buf) {
-
     Gstjdspfx * filter = GST_JDSPFX (base);
     volatile guint idx, num_samples;
-    //short *pcm_data;
-    float *pcm_data;
+    short *pcm_data_s16;
+    int32_t *pcm_data_s32;
+    float *pcm_data_f32;
     GstClockTime timestamp, stream_time;
     GstMapInfo map;
+
+    //Samplerate check
+    if(filter->samplerate!=GST_AUDIO_FILTER_RATE(filter)){
+        filter->samplerate = GST_AUDIO_FILTER_RATE(filter);
+        g_mutex_lock(&filter->lock);
+        command_set_buffercfg(filter->effectDspMain,filter->samplerate,filter->format);
+        g_mutex_unlock(&filter->lock);
+    }
+
+    //Format check
+    guint fmt = 0;
+    GstStructure *stru;
+    stru = gst_caps_get_structure (gst_pad_get_current_caps (base->sinkpad), 0);
+    if(strstr(gst_structure_get_string(stru, "format"),"S16LE")!=NULL)
+        fmt = s16le;
+    else if(strstr(gst_structure_get_string(stru, "format"),"F32LE")!=NULL)
+        fmt = f32le;
+    else if(strstr(gst_structure_get_string(stru, "format"),"S32LE")!=NULL)
+        fmt = s32le;
+    else
+        fmt = other;
+
+    if(filter->format != fmt){
+        filter->format = fmt;
+
+        g_mutex_lock(&filter->lock);
+        command_set_buffercfg(filter->effectDspMain,filter->samplerate,filter->format);
+        g_mutex_unlock(&filter->lock);
+
+        if(filter->format == other)
+            printf("[E] FORMAT NOT SUPPORTED, attempting to continue anyway... (this should never happen, gstreamer checks formats before initializing pads)\n");
+    }
+
+
     if (filter->fx_enabled) {
         timestamp = GST_BUFFER_TIMESTAMP(buf);
         stream_time =
@@ -761,57 +789,98 @@ gst_jdspfx_transform_ip(GstBaseTransform *base, GstBuffer *buf) {
             return GST_FLOW_OK;
 
 
-       // printf("\n\n------BEGIN------\n");
-
         gst_buffer_map(buf, &map, GST_MAP_READWRITE);
         num_samples = map.size / GST_AUDIO_FILTER_BPS(filter) / 2;
-        //pcm_data = (int16_t * )(map.data);
-        pcm_data = (float * )(map.data);
-        for (idx = 0; idx < num_samples * 2; idx++) {
-            //pcm_data[idx] >>= 1;
 
-        }
         audio_buffer_t *in = (audio_buffer_t *) malloc(
                 sizeof(size_t)); //Allocate memory for the frameCount (size_t) in the struct
-        in->frameCount = (size_t) num_samples;
-        //in->s16 = (int16_t *) malloc(2 * num_samples * sizeof(int16_t)); //Allocate memory for the 16bit int array seperately (because it's a pointer)
-        in->f32 = (float *) malloc(2 * num_samples * sizeof(float));
-        for (idx = 0; idx < num_samples * 2; idx++) {
-            //in->s16[idx] = pcm_data[idx];
-            //printf("%d ", in->s16[idx]);
-            in->f32[idx] = pcm_data[idx];
-            //printf("%f ", in->f32[idx]);
-        }
-
         audio_buffer_t *out = (audio_buffer_t *) malloc(sizeof(size_t));
-        out->frameCount = num_samples;
-        //out->s16 = (int16_t *) malloc(2 * num_samples * sizeof(int16_t));
-        out->f32 = (float*) malloc(2 * num_samples * sizeof(float));
 
-        //printf("\n\n\n");
 
-        g_mutex_lock(&filter->lock);
-        filter->effectDspMain->process(in, out);
-        g_mutex_unlock(&filter->lock);
-        for (idx = 0; idx < num_samples * 2; idx++) {
-            /*if (out->s16[idx]) {
-                printf("%d ", out->s16[idx]);
-                pcm_data[idx] = out->s16[idx];
+        switch(filter->format){
+            case s16le:
+                pcm_data_s16 = (int16_t * )(map.data);
+                for (idx = 0; idx < num_samples * 2; idx++) {
+                    //pcm_data_s16[idx] >>= 1;
+                }
+                in->frameCount = (size_t) num_samples;
+                in->s16 = (int16_t *) malloc(2 * num_samples * sizeof(int16_t)); //Allocate memory for the 16bit int array seperately (because it's a pointer)
+                for (idx = 0; idx < num_samples * 2; idx++) {
+                    in->s16[idx] = pcm_data_s16[idx];
+                    //printf("%d ", in->s16[idx]);
+                }
 
-            } else printf("Index %d is null (outputbuffer) :(\n", idx);*/
-            if (out->f32[idx]) {
-                //printf("%f ", out->f32[idx]);
-                pcm_data[idx] = out->f32[idx];
-            } //else printf("Index %d is null (outputbuffer) :(\n", idx);
+                out->frameCount = num_samples;
+                out->s16 = (int16_t *) malloc(2 * num_samples * sizeof(int16_t));
+
+                g_mutex_lock(&filter->lock);
+                filter->effectDspMain->process(in, out);
+                g_mutex_unlock(&filter->lock);
+                for (idx = 0; idx < num_samples * 2; idx++) {
+                    if (out->s16[idx])
+                        pcm_data_s16[idx] = out->s16[idx];
+                    //else printf("Index %d is null (outputbuffer) :(\n", idx);
+                  }
+
+                break;
+                case s32le:
+                pcm_data_s32 = (int32_t * )(map.data);
+
+                in->frameCount = (size_t) num_samples;
+                in->s32 = (int32_t *) malloc(2 * num_samples * sizeof(int32_t)); //Allocate memory for the 16bit int array seperately (because it's a pointer)
+                for (idx = 0; idx < num_samples * 2; idx++) {
+                    in->s32[idx] = pcm_data_s32[idx];
+                    //printf("%d ", in->s16[idx]);
+                }
+
+                out->frameCount = num_samples;
+                out->s32 = (int32_t *) malloc(2 * num_samples * sizeof(int32_t));
+
+                g_mutex_lock(&filter->lock);
+                filter->effectDspMain->process(in, out);
+                g_mutex_unlock(&filter->lock);
+                for (idx = 0; idx < num_samples * 2; idx++) {
+                    if (out->s32[idx])
+                        pcm_data_s32[idx] = out->s32[idx];
+                    //else printf("Index %d is null (outputbuffer) :(\n", idx);
+                }
+
+                break;
+            case f32le:
+                pcm_data_f32 = (float * )(map.data);
+                in->frameCount = (size_t) num_samples;
+                in->f32 = (float *) malloc(2 * num_samples * sizeof(float));
+                for (idx = 0; idx < num_samples * 2; idx++)
+                    in->f32[idx] = pcm_data_f32[idx];
+
+                out->frameCount = num_samples;
+                out->f32 = (float*) malloc(2 * num_samples * sizeof(float));
+
+                g_mutex_lock(&filter->lock);
+                filter->effectDspMain->process(in, out);
+                g_mutex_unlock(&filter->lock);
+                for (idx = 0; idx < num_samples * 2; idx++) {
+                    if (out->f32[idx])
+                        pcm_data_f32[idx] = out->f32[idx];
+                    //else printf("Index %d is null (outputbuffer) :(\n", idx);
+                }
+                break;
         }
-        //printf("\n------END------");
 
         gst_buffer_unmap(buf, &map);
-        delete in->f32;
-        delete out->f32;
+
+        switch(filter->format){
+            case s16le:
+                delete in->s16;
+                delete out->s16;
+                break;
+            case f32le:
+                delete in->f32;
+                delete out->f32;
+                break;
+        }
         delete in;
         delete out;
-
     }
 
     return GST_FLOW_OK;

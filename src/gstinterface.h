@@ -6,6 +6,7 @@
 #ifndef GST_PLUGIN_JAMESDSP_GSTINTERFACE_H
 #define GST_PLUGIN_JAMESDSP_GSTINTERFACE_H
 #include "EffectDSPMain.h"
+#include "gstjdspfx.h"
 #include <stdio.h>
 #include <stdint.h>
 #include <math.h>
@@ -89,6 +90,26 @@ void command_set_px4_vx256x1(EffectDSPMain *intf,int32_t cmd,const char *buffer)
         cmd_data_char[4 + i] = (char) buffer[i]; //Offset +4 because the int32_t cmd-id is in front of it
 
     intf->command(EFFECT_CMD_SET_PARAM, 4*sizeof(int32_t)+256*sizeof(char),cep,NULL,NULL);
+}
+///Configure buffer
+void command_set_buffercfg(EffectDSPMain *intf,int32_t samplerate,int32_t format){
+    dsp_config_t *cep = (dsp_config_t *)malloc(sizeof(uint32_t)+sizeof(uint8_t));
+    uint8_t result = 0;
+    switch(format){
+        case s16le:
+            result = 0;
+            break;
+        case s32le:
+            result = 2;
+            break;
+
+        case f32le:
+        default:
+            result = 1;
+    }
+    cep->samplingRate = (uint32_t)samplerate;
+    cep->format = result;
+    intf->command(EFFECT_CMD_SET_CONFIG, sizeof(uint32_t)+sizeof(uint8_t),cep,NULL,NULL);
 }
 ///Load and send DDC data
 void command_set_ddc(EffectDSPMain *intf,char* path,bool enabled){
