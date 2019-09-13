@@ -1,7 +1,7 @@
 # JamesDSP for Linux
 ###### (OpenSource Version)
 This is experimental and obviously work in progress.
-Currently everything (analog modelling, bass boost, bs2b, VDC/DDCs, limiter, compression, reverbation and the stereo widener), except the convolver is implemented, and the plugin might produce crackling output if the samplerate is set incorrectly.
+Currently everything (analog modelling, bass boost, bs2b, VDC/DDCs, limiter, compression, reverbation and the stereo widener), except the convolver is implemented.
 
 
 __This is the repo of the gst-plugin. You might want to visit the [main repository](https://github.com/ThePBone/JDSP4Linux)__
@@ -16,16 +16,6 @@ Note: This package alone does not install JDSP for you. Installation instruction
 
 ![AUR version](https://img.shields.io/aur/version/gst-plugin-jamesdsp-git?label=aur)
 
-## Workarounds
-### Fix crackling/choppy sound
-_Set the default samplerate to 48000Hz in pulseaudio's config:_
-
-`sudo nano /etc/pulse/daemon.conf`
-
-Replace this line:
-`;  default-sample-rate = 44100`
-with this one:
-`default-sample-rate = 48000`
 ## Launch it
 You can find more information in the [main repo](https://github.com/ThePBone/JDSP4Linux).
    
