@@ -77,7 +77,7 @@ protected:
 	void refreshTubeAmp();
 	void refreshBassLinearPhase(uint32_t actualframeCount, uint32_t tapsLPFIR, double bassBoostCentreFreq);
 	int refreshConvolver(uint32_t actualframeCount);
-	void refreshStereoWiden(uint32_t parameter);
+	void refreshStereoWiden(uint32_t m,uint32_t s);
 	void refreshCompressor();
 	void refreshEqBands(uint32_t actualframeCount, double *bands);
 	void refreshReverb();

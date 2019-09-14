@@ -53,10 +53,12 @@ enum {
     PROP_HEADSET_ENABLE,
     PROP_HEADSET_PRESET,
    /* stereo wide */
-    PROP_STEREOWIDE_MODE,
+    PROP_STEREOWIDE_MCOEFF,
+    PROP_STEREOWIDE_SCOEFF,
     PROP_STEREOWIDE_ENABLE,
     /* bs2b */
-    PROP_BS2B_MODE,
+    PROP_BS2B_FCUT,
+    PROP_BS2B_FEED,
     PROP_BS2B_ENABLE,
     /* compressor */
     PROP_COMPRESSOR_ENABLE,
@@ -182,9 +184,13 @@ gst_jdspfx_class_init(GstjdspfxClass *klass) {
                                                          "Enable stereo widener",
                                                          FALSE,
                                                          (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
-    g_object_class_install_property(gobject_class, PROP_STEREOWIDE_MODE,
-                                    g_param_spec_int("stereowide-mode", "StereoWideMode", "Stereo widener strength",
-                                                     0, 4, 0,
+    g_object_class_install_property(gobject_class, PROP_STEREOWIDE_MCOEFF,
+                                    g_param_spec_int("stereowide-mcoeff", "StereoWideM", "Stereo widener M Coeff (1000=1)",
+                                                     0, 10000, 0,
+                                                     (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property(gobject_class, PROP_STEREOWIDE_SCOEFF,
+                                    g_param_spec_int("stereowide-scoeff", "StereoWideS", "Stereo widener S Coeff (1000=1)",
+                                                     0, 10000, 0,
                                                      (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
 
     /* bs2b */
@@ -193,9 +199,13 @@ gst_jdspfx_class_init(GstjdspfxClass *klass) {
                                                          "Enable BS2B",
                                                          FALSE,
                                                          (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
-    g_object_class_install_property(gobject_class, PROP_BS2B_MODE,
-                                    g_param_spec_int("bs2b-mode", "BS2BMode", "BS2B mode",
-                                                     0, 2, 0,
+    g_object_class_install_property(gobject_class, PROP_BS2B_FCUT,
+                                    g_param_spec_int("bs2b-fcut", "BS2BFCut", "BS2B cutoff frequency (Hz)",
+                                                     300, 2000, 700,
+                                                     (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property(gobject_class, PROP_BS2B_FEED,
+                                    g_param_spec_int("bs2b-feed", "BS2BFeed", "BS2B crossfeeding level at low frequencies (10=1dB)",
+                                                     10, 150, 60,
                                                      (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
 
     /* compressor */
@@ -324,15 +334,16 @@ static void sync_all_parameters(Gstjdspfx * self) {
                           1203, self->headset_enabled);
 
     // stereo wide
-    command_set_px4_vx2x1(self->effectDspMain,
-                          137, (int16_t)self->stereowide_mode);
+    command_set_px4_vx2x2(self->effectDspMain,
+                          137, (int16_t)self->stereowide_mcoeff,(int16_t)self->stereowide_scoeff);
 
     command_set_px4_vx2x1(self->effectDspMain,
                           1204, self->stereowide_enabled);
 
     // bs2b
-    command_set_px4_vx2x1(self->effectDspMain,
-                          188, (int16_t)self->bs2b_mode);
+    if(self->bs2b_feed != 0)
+        command_set_px4_vx2x2(self->effectDspMain,
+                          188, (int16_t)self->bs2b_fcut,(int16_t)self->bs2b_feed);
 
     command_set_px4_vx2x1(self->effectDspMain,
                           1208, self->bs2b_enabled);
@@ -392,10 +403,12 @@ gst_jdspfx_init(Gstjdspfx * self) {
     self->bass_enabled = FALSE;
     self->headset_preset = 8;
     self->headset_enabled = FALSE;
-    self->stereowide_mode = 0;
+    self->stereowide_mcoeff = 0;
+    self->stereowide_scoeff = 0;
     self->stereowide_enabled = FALSE;
     self->bs2b_enabled = FALSE;
-    self->bs2b_mode = 0;
+    self->bs2b_fcut = 700;
+    self->bs2b_feed = 0;
     self->compression_pregain = 12;
     self->compression_threshold = -60;
     self->compression_knee = 30;
@@ -528,15 +541,22 @@ gst_jdspfx_set_property(GObject *object, guint prop_id,
             g_mutex_unlock(&self->lock);
         }
             break;
-        case PROP_STEREOWIDE_MODE: {
+        case PROP_STEREOWIDE_MCOEFF: {
             g_mutex_lock(&self->lock);
-            self->stereowide_mode = g_value_get_int(value);
-            command_set_px4_vx2x1(self->effectDspMain,
-                                  137, (int16_t) self->stereowide_mode);
+            self->stereowide_mcoeff = g_value_get_int(value);
+            command_set_px4_vx2x2(self->effectDspMain,
+                                  137, (int16_t) self->stereowide_mcoeff,self->stereowide_scoeff);
             g_mutex_unlock(&self->lock);
         }
             break;
-
+        case PROP_STEREOWIDE_SCOEFF: {
+            g_mutex_lock(&self->lock);
+            self->stereowide_scoeff = g_value_get_int(value);
+            command_set_px4_vx2x2(self->effectDspMain,
+                                  137, (int16_t) self->stereowide_mcoeff,self->stereowide_scoeff);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
         case PROP_BS2B_ENABLE: {
             g_mutex_lock(&self->lock);
             self->bs2b_enabled = g_value_get_boolean(value);
@@ -545,15 +565,24 @@ gst_jdspfx_set_property(GObject *object, guint prop_id,
             g_mutex_unlock(&self->lock);
         }
             break;
-        case PROP_BS2B_MODE: {
+        case PROP_BS2B_FCUT: {
             g_mutex_lock(&self->lock);
-            self->bs2b_mode = g_value_get_int(value);
-            command_set_px4_vx2x1(self->effectDspMain,
-                                  188, (int16_t) self->bs2b_mode);
+            self->bs2b_fcut = g_value_get_int(value);
+            if(self->bs2b_feed != 0)
+                command_set_px4_vx2x2(self->effectDspMain,
+                                  188, (int16_t)self->bs2b_fcut,(int16_t)self->bs2b_feed);
             g_mutex_unlock(&self->lock);
         }
             break;
-
+        case PROP_BS2B_FEED: {
+            g_mutex_lock(&self->lock);
+            self->bs2b_feed = g_value_get_int(value);
+            if(self->bs2b_feed != 0)
+                command_set_px4_vx2x2(self->effectDspMain,
+                                  188, (int16_t)self->bs2b_fcut,(int16_t)self->bs2b_feed);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
 
 
         case PROP_COMPRESSOR_ENABLE: {

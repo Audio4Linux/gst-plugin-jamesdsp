@@ -411,29 +411,7 @@ int32_t EffectDSPMain::command(uint32_t cmdCode, uint32_t cmdSize, void* pCmdDat
                 if(replyData!=NULL)*replyData = 0;
 				return 0;
 			}
-			else if (cmd == 137)
-			{
-				int16_t value = ((int16_t *)cep)[8];
-				refreshStereoWiden(value);
-                if(replyData!=NULL)*replyData = 0;
-				return 0;
-			}
-			else if (cmd == 188)
-			{
-				int16_t value = ((int16_t *)cep)[8];
-				if (bs2bEnabled == 2)
-				{
-					if (value == 0)
-						BS2BInit(&bs2b, (unsigned int)mSamplingRate, BS2B_JMEIER_CLEVEL);
-					else if (value == 1)
-						BS2BInit(&bs2b, (unsigned int)mSamplingRate, BS2B_CMOY_CLEVEL);
-					else if (value == 2)
-						BS2BInit(&bs2b, (unsigned int)mSamplingRate, BS2B_DEFAULT_CLEVEL);
-					bs2bEnabled = 1;
-				}
-                if(replyData!=NULL)*replyData = 0;
-				return 0;
-			}
+
 			else if (cmd == 150)
 			{
 				double oldVal = tubedrive;
@@ -760,6 +738,39 @@ int32_t EffectDSPMain::command(uint32_t cmdCode, uint32_t cmdSize, void* pCmdDat
 				return 0;
 			}
 		}
+        if (cep->psize == 4 && cep->vsize == 4) {
+            int32_t cmd = ((int32_t *)cep)[3];
+            if (cmd == 137) {
+                int16_t matrixM = ((int16_t *) cep)[8];
+                int16_t matrixS = ((int16_t *) cep)[9];
+                refreshStereoWiden((uint32_t)matrixM,(uint32_t)matrixS);
+                if (replyData != NULL)*replyData = 0;
+                return 0;
+            }
+            else if (cmd == 188)
+            {
+                int16_t fcut = ((int16_t *) cep)[8];
+                int16_t feed = ((int16_t *) cep)[9];
+                //fcut {300-2000}
+                //feed {10-150} 10=1dB
+                int res = ((unsigned int)fcut | ((unsigned int)feed << 16));
+                if (bs2bEnabled == 2)
+                {
+                    BS2BInit(&bs2b, (unsigned int)mSamplingRate, res);
+                    printf("[I] BS2B - Crossfeeding level: %d (%fdB), Cutoff frequency: %dHz\n",feed,feed/10.0f,fcut);
+
+                    /*if (value == 0)
+                       BS2BInit(&bs2b, (unsigned int)mSamplingRate, BS2B_JMEIER_CLEVEL);
+                   else if (value == 1)
+                       BS2BInit(&bs2b, (unsigned int)mSamplingRate, BS2B_CMOY_CLEVEL);
+                   else if (value == 2)
+                       BS2BInit(&bs2b, (unsigned int)mSamplingRate, BS2B_DEFAULT_CLEVEL);*/
+                    bs2bEnabled = 1;
+                }
+                if(replyData!=NULL)*replyData = 0;
+                return 0;
+            }
+        }
 		if (cep->psize == 4 && cep->vsize == 8)
 		{
 			int32_t cmd = (int32_t)((float*)cep)[3];
@@ -1032,9 +1043,12 @@ int EffectDSPMain::refreshConvolver(uint32_t DSPbufferLength)
 	}
 	return 1;
 }
-void EffectDSPMain::refreshStereoWiden(uint32_t parameter)
+void EffectDSPMain::refreshStereoWiden(uint32_t m,uint32_t s)
 {
-	switch (parameter)
+    mMatrixMCoeff = m/1000.0f; //Min-Max: 0-10000 -> x/1000 -> 0.0-10.0
+    mMatrixSCoeff = s/1000.0f;
+    printf("[I] Stereo widener - MCoeff: %f, SCoeff: %f\n",mMatrixMCoeff,mMatrixSCoeff);
+	/*switch (parameter)
 	{
 	case 0: // A Bit
 		mMatrixMCoeff = 1.0 * 0.5;
@@ -1056,7 +1070,7 @@ void EffectDSPMain::refreshStereoWiden(uint32_t parameter)
 		mMatrixMCoeff = 0.8 * 0.5;
 		mMatrixSCoeff = 2.0 * 0.5;
 		break;
-	}
+	}*/
 }
 void EffectDSPMain::refreshCompressor()
 {

@@ -53,11 +53,13 @@ struct _Gstjdspfx {
 
     // stereo wide
     gboolean stereowide_enabled;
-    gint32 stereowide_mode;
+    gint32 stereowide_mcoeff;
+    gint32 stereowide_scoeff;
 
     // bs2b
     gboolean bs2b_enabled;
-    gint32 bs2b_mode;
+    gint32 bs2b_fcut;
+    gint32 bs2b_feed;
 
     // compressor
     gboolean compression_enabled;
