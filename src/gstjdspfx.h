@@ -49,7 +49,24 @@ struct _Gstjdspfx {
 
     // reverb
     gboolean headset_enabled;
-    gint32 headset_preset;
+    gint32 headset_osf;
+    gint32 headset_delay;
+    gint32 headset_inputlpf;
+    gint32 headset_basslpf;
+    gint32 headset_damplpf;
+    gint32 headset_outputlpf;
+
+    gfloat headset_reflection_amount;
+    gfloat headset_reflection_factor;
+    gfloat headset_reflection_width;
+    gfloat headset_finaldry;
+    gfloat headset_finalwet;
+    gfloat headset_width;
+    gfloat headset_wet;
+    gfloat headset_lfo_wander;
+    gfloat headset_bassboost;
+    gfloat headset_lfo_spin;
+    gfloat headset_decay;
 
     // stereo wide
     gboolean stereowide_enabled;

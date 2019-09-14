@@ -18,6 +18,26 @@ extern "C"
 }
 #define NUM_BANDS 15
 #define NUM_BANDSM1 NUM_BANDS-1
+
+typedef struct reverbdata_s {
+    int oversamplefactor;  // how much to oversample [1 to 4]
+    double ertolate;       // early reflection amount [0 to 1]
+    double erefwet;        // dB; final wet mix [-70 to 10]
+    double dry;            // dB; final dry mix [-70 to 10]
+    double ereffactor;     // early reflection factor [0.5 to 2.5]
+    double erefwidth;      // early reflection width [-1 to 1]
+    double width;          // width of reverb L/R mix [0 to 1]
+    double wet;            // dB; reverb wetness [-70 to 10]
+    double wander;         // LFO wander amount [0.1 to 0.6]
+    double bassb;          // bass boost [0 to 0.5]
+    double spin;           // LFO spin amount [0 to 10]
+    double inputlpf;       // Hz; lowpass cutoff for input [200 to 18000]
+    double basslpf;        // Hz; lowpass cutoff for bass [50 to 1050]
+    double damplpf;        // Hz; lowpass cutoff for dampening [200 to 18000]
+    double outputlpf;      // Hz; lowpass cutoff for output [200 to 18000]
+    double rt60;           // reverb time decay [0.1 to 30]
+    double delay;          // seconds, amount of delay [-0.5 to 0.5]
+} reverbdata_t;
 class EffectDSPMain : public Effect
 {
 protected:
@@ -67,7 +87,13 @@ protected:
 	int16_t bassBoostStrength, bassBoostFilterType, eqFilterType, bs2bLv, compressionEnabled, bassBoostEnabled, equalizerEnabled, reverbEnabled,
 	stereoWidenEnabled, convolverEnabled, convolverReady, bassLpReady, eqFIRReady, analogModelEnable, bs2bEnabled, viperddcEnabled;
 	int16_t mPreset, samplesInc, stringIndex, impChannels, previousimpChannels;
+
+
+    reverbdata_t *r = NULL;
+
 	int32_t impulseLengthActual, convolverNeedRefresh;
+
+
 	int isBenchData;
 	double *benchmarkValue[2];
 	void FreeBassBoost();
@@ -91,6 +117,7 @@ public:
 	int32_t command(uint32_t cmdCode, uint32_t cmdSize, void* pCmdData, uint32_t* replySize, void* pReplyData);
 	int32_t process(audio_buffer_t *in, audio_buffer_t *out);
 	void _loadDDC(char*);
+    void _loadReverb(reverbdata_t *r2);
 
 };
 typedef struct dsp_config_s

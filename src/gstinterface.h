@@ -212,6 +212,28 @@ void command_set_eq(EffectDSPMain *intf,char* eq){
 void config_set_px0_vx0x0(EffectDSPMain *intf,uint32_t param){
     intf->command(param,NULL,NULL,NULL,NULL);
 }
+///Prepare and send reverb data
+void command_set_reverb(EffectDSPMain *intf,Gstjdspfx * self){
+    reverbdata_t *r = (reverbdata_t*)malloc(sizeof(*r));
+    r->oversamplefactor = self->headset_osf;
+    r->ertolate = self->headset_reflection_amount;
+    r->erefwet = self->headset_finalwet;
+    r->dry = self->headset_finaldry;
+    r->ereffactor = self->headset_reflection_factor;
+    r->erefwidth = self->headset_reflection_width;
+    r->width = self->headset_width;
+    r->wet = self->headset_wet;
+    r->wander = self->headset_lfo_wander;
+    r->bassb = self->headset_bassboost;
+    r->spin = self->headset_lfo_spin;
+    r->inputlpf = self->headset_inputlpf;
+    r->basslpf = self->headset_basslpf;
+    r->damplpf = self->headset_damplpf;
+    r->outputlpf = self->headset_outputlpf;
+    r->rt60 = self->headset_decay;
+    r->delay = (double)(self->headset_delay/1000);
+    intf->_loadReverb(r);
+}
 ///Read ascii-data from file
 char* memory_read_ascii(char *path){
     int c; long size; FILE *file;

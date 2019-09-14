@@ -34,6 +34,8 @@ EffectDSPMain::EffectDSPMain()
 	memset(outputBuffer[1], 0, memSize);
 	tempBuf[0] = (double*)malloc(memSize);
 	tempBuf[1] = (double*)malloc(memSize);
+
+	r = (reverbdata_t*)malloc(sizeof *r);
 #ifdef DEBUG
 	printf("[I] %d space allocated\n", DSPbufferLength);
 #endif
@@ -404,6 +406,7 @@ int32_t EffectDSPMain::command(uint32_t cmdCode, uint32_t cmdSize, void* pCmdDat
 			}
 			else if (cmd == 128)
 			{
+			    //REPLACED! This will have no effect
 				int16_t oldVal = mPreset;
 				mPreset = ((int16_t *)cep)[8];
 				if (oldVal != mPreset)
@@ -1110,9 +1113,10 @@ void EffectDSPMain::refreshEqBands(uint32_t DSPbufferLength, double *bands)
 }
 void EffectDSPMain::refreshReverb()
 {
-	if (mPreset < 0 || mPreset > 18)
-		mPreset = 0;
-	sf_presetreverb(&myreverb, mSamplingRate, (sf_reverb_preset)mPreset);
+	sf_advancereverb(&myreverb,mSamplingRate,r->oversamplefactor,r->ertolate,r->erefwet
+	        ,r->dry,r->ereffactor,r->erefwidth,r->width,r->wet,r->wander,r->bassb,
+	        r->spin,r->inputlpf,r->basslpf,r->damplpf,r->outputlpf,r->rt60,r->delay);
+	//sf_presetreverb(&myreverb, mSamplingRate, (sf_reverb_preset)mPreset);
 }
 void *EffectDSPMain::threadingConvF(void *args)
 {
@@ -1590,5 +1594,10 @@ void EffectDSPMain::_loadDDC(char* ddc_str){
 #endif
     free(stringEq);
     stringEq = 0;
+    return;
+}
+void EffectDSPMain::_loadReverb(reverbdata_t *r2){
+    r = r2;
+    refreshReverb();
     return;
 }

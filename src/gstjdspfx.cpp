@@ -51,7 +51,23 @@ enum {
     PROP_BASS_FREQ,
     /* reverb */
     PROP_HEADSET_ENABLE,
-    PROP_HEADSET_PRESET,
+    PROP_HEADSET_OSF,
+    PROP_HEADSET_REFLECTION_AMOUNT,
+    PROP_HEADSET_FINALWET,
+    PROP_HEADSET_FINALDRY,
+    PROP_HEADSET_REFLECTION_FACTOR,
+    PROP_HEADSET_REFLECTION_WIDTH,
+    PROP_HEADSET_WIDTH,
+    PROP_HEADSET_WET,
+    PROP_HEADSET_LFO_WANDER,
+    PROP_HEADSET_BASSBOOST,
+    PROP_HEADSET_LFO_SPIN,
+    PROP_HEADSET_LPF_INPUT,
+    PROP_HEADSET_LPF_BASS,
+    PROP_HEADSET_LPF_DAMP,
+    PROP_HEADSET_LPF_OUTPUT,
+    PROP_HEADSET_DECAY,
+    PROP_HEADSET_DELAY,
    /* stereo wide */
     PROP_STEREOWIDE_MCOEFF,
     PROP_STEREOWIDE_SCOEFF,
@@ -173,10 +189,78 @@ gst_jdspfx_class_init(GstjdspfxClass *klass) {
                                                          "Enable reverbation",
                                                          FALSE,
                                                          (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
-    g_object_class_install_property(gobject_class, PROP_HEADSET_PRESET,
-                                    g_param_spec_int("headset-preset", "ReverbPreset", "Reverb preset/strength",
-                                                     0, 18, 8,
+
+    g_object_class_install_property(gobject_class, PROP_HEADSET_OSF,
+                                    g_param_spec_int("headset-osf", "ReverbOSF", "Oversample factor: how much to oversample",
+                                                     1, 4, 1,
                                                      (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property(gobject_class, PROP_HEADSET_REFLECTION_AMOUNT,
+                                    g_param_spec_float("headset-reflection-amount", "ReverbErtolate", "Early reflection amount",
+                                                       0, 1, 0,
+                                                       (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property(gobject_class, PROP_HEADSET_FINALWET,
+                                    g_param_spec_float("headset-finalwet", "ReverbFWET", "Final wet mix (dB)",
+                                                       -70, 10, 0,
+                                                       (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property(gobject_class, PROP_HEADSET_FINALDRY,
+                                    g_param_spec_float("headset-finaldry", "ReverbFDRY", "Final dry mix (dB)",
+                                                       -70, 10, 0,
+                                                       (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property(gobject_class, PROP_HEADSET_REFLECTION_FACTOR,
+                                    g_param_spec_float("headset-reflection-factor", "ReverbEreffactor", "Early reflection factor",
+                                                       0.5, 2.5, 0.5,
+                                                       (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property(gobject_class, PROP_HEADSET_REFLECTION_WIDTH,
+                                    g_param_spec_float("headset-reflection-width", "ReverbErefwidth", "Early reflection width",
+                                                       -1, 1, 0,
+                                                       (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property(gobject_class, PROP_HEADSET_WIDTH,
+                                    g_param_spec_float("headset-width", "ReverbWidth", "Width of reverb L/R mix",
+                                                       0, 1, 0,
+                                                       (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property(gobject_class, PROP_HEADSET_WET,
+                                    g_param_spec_float("headset-wet", "ReverbWET", "Reverb wetness (dB)",
+                                                       -70, 10, 0,
+                                                       (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property(gobject_class, PROP_HEADSET_LFO_WANDER,
+                                    g_param_spec_float("headset-lfo-wander", "ReverbLFOWander", "LFO wander amount",
+                                                       0.1, 0.6, 0.1,
+                                                       (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property(gobject_class, PROP_HEADSET_BASSBOOST,
+                                    g_param_spec_float("headset-bassboost", "ReverbBassBoost", "Bass Boost",
+                                                       0, 0.5, 0,
+                                                       (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property(gobject_class, PROP_HEADSET_LFO_SPIN,
+                                    g_param_spec_float("headset-lfo-spin", "ReverbLFOSpin", "LFO spin amount",
+                                                       0, 10, 0,
+                                                       (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property(gobject_class, PROP_HEADSET_DECAY,
+                                    g_param_spec_float("headset-decay", "ReverbRT60", "Time decay",
+                                                       0.1, 30, 0.1,
+                                                       (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+
+    g_object_class_install_property(gobject_class, PROP_HEADSET_DELAY,
+                                    g_param_spec_int("headset-delay", "ReverbDelay", "Delay in milliseconds",
+                                                     -500, 500, 0,
+                                                     (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property(gobject_class, PROP_HEADSET_LPF_INPUT,
+                                    g_param_spec_int("headset-lpf-input", "ReverbLPFInput", "Lowpass cutoff for input (Hz)",
+                                                      200, 18000, 200,
+                                                     (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property(gobject_class, PROP_HEADSET_LPF_BASS,
+                                    g_param_spec_int("headset-lpf-bass", "ReverbLPFBass", "Lowpass cutoff for bass (Hz)",
+                                                     50, 1050, 50,
+                                                     (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property(gobject_class, PROP_HEADSET_LPF_DAMP,
+                                    g_param_spec_int("headset-lpf-damp", "ReverbLPFDamp", "Lowpass cutoff for dampening (Hz)",
+                                                     200, 18000, 200,
+                                                     (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property(gobject_class, PROP_HEADSET_LPF_OUTPUT,
+                                    g_param_spec_int("headset-lpf-output", "ReverbLPFOutput", "Lowpass cutoff for output (Hz)",
+                                                     200, 18000, 200,
+                                                     (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+
+
 
     /* stereo wide */
     g_object_class_install_property(gobject_class, PROP_STEREOWIDE_ENABLE,
@@ -327,8 +411,7 @@ static void sync_all_parameters(Gstjdspfx * self) {
                           1201, self->bass_enabled);
 
     // reverb
-    command_set_px4_vx2x1(self->effectDspMain,
-                          128, (int16_t)self->headset_preset);
+    command_set_reverb(self->effectDspMain, self);
 
     command_set_px4_vx2x1(self->effectDspMain,
                           1203, self->headset_enabled);
@@ -401,7 +484,24 @@ gst_jdspfx_init(Gstjdspfx * self) {
     self->bass_filtertype = 0;
     self->bass_freq = 55;
     self->bass_enabled = FALSE;
-    self->headset_preset = 8;
+
+    self->headset_osf=1;
+    self->headset_delay=0;
+    self->headset_inputlpf=200;
+    self->headset_basslpf=50;
+    self->headset_damplpf=200;
+    self->headset_outputlpf=200;
+    self->headset_reflection_amount=0;
+    self->headset_reflection_factor=0,5;
+    self->headset_reflection_width=0;
+    self->headset_finaldry=0;
+    self->headset_finalwet=0;
+    self->headset_width=0;
+    self->headset_wet=0;
+    self->headset_lfo_wander=0.1;
+    self->headset_bassboost=0;
+    self->headset_lfo_spin=0;
+    self->headset_decay=0.1;
     self->headset_enabled = FALSE;
     self->stereowide_mcoeff = 0;
     self->stereowide_scoeff = 0;
@@ -524,11 +624,123 @@ gst_jdspfx_set_property(GObject *object, guint prop_id,
             g_mutex_unlock(&self->lock);
         }
             break;
-        case PROP_HEADSET_PRESET: {
+        case PROP_HEADSET_OSF: {
             g_mutex_lock(&self->lock);
-            self->headset_preset = g_value_get_int(value);
-            command_set_px4_vx2x1(self->effectDspMain,
-                                  128, (int16_t) self->headset_preset);
+            self->headset_osf = g_value_get_int(value);
+            command_set_reverb(self->effectDspMain,self);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+        case PROP_HEADSET_DELAY: {
+            g_mutex_lock(&self->lock);
+            self->headset_delay = g_value_get_int(value);
+            command_set_reverb(self->effectDspMain,self);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+        case PROP_HEADSET_LPF_INPUT: {
+            g_mutex_lock(&self->lock);
+            self->headset_inputlpf = g_value_get_int(value);
+            command_set_reverb(self->effectDspMain,self);
+            g_mutex_unlock(&self->lock);
+        }
+        case PROP_HEADSET_LPF_BASS: {
+            g_mutex_lock(&self->lock);
+            self->headset_basslpf = g_value_get_int(value);
+            command_set_reverb(self->effectDspMain,self);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+        case PROP_HEADSET_LPF_DAMP: {
+            g_mutex_lock(&self->lock);
+            self->headset_damplpf = g_value_get_int(value);
+            command_set_reverb(self->effectDspMain,self);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+        case PROP_HEADSET_LPF_OUTPUT: {
+            g_mutex_lock(&self->lock);
+            self->headset_outputlpf = g_value_get_int(value);
+            command_set_reverb(self->effectDspMain,self);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+
+        case PROP_HEADSET_REFLECTION_WIDTH: {
+            g_mutex_lock(&self->lock);
+            self->headset_reflection_width = g_value_get_float(value);
+            command_set_reverb(self->effectDspMain,self);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+        case PROP_HEADSET_REFLECTION_FACTOR: {
+            g_mutex_lock(&self->lock);
+            self->headset_reflection_factor = g_value_get_float(value);
+            command_set_reverb(self->effectDspMain,self);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+        case PROP_HEADSET_REFLECTION_AMOUNT: {
+            g_mutex_lock(&self->lock);
+            self->headset_reflection_amount = g_value_get_float(value);
+            command_set_reverb(self->effectDspMain,self);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+
+        case PROP_HEADSET_FINALDRY: {
+            g_mutex_lock(&self->lock);
+            self->headset_finaldry = g_value_get_float(value);
+            command_set_reverb(self->effectDspMain,self);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+        case PROP_HEADSET_FINALWET: {
+            g_mutex_lock(&self->lock);
+            self->headset_finalwet = g_value_get_float(value);
+            command_set_reverb(self->effectDspMain,self);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+        case PROP_HEADSET_WIDTH: {
+            g_mutex_lock(&self->lock);
+            self->headset_width = g_value_get_float(value);
+            command_set_reverb(self->effectDspMain,self);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+        case PROP_HEADSET_WET: {
+            g_mutex_lock(&self->lock);
+            self->headset_wet = g_value_get_float(value);
+            command_set_reverb(self->effectDspMain,self);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+        case PROP_HEADSET_LFO_WANDER: {
+            g_mutex_lock(&self->lock);
+            self->headset_lfo_wander = g_value_get_float(value);
+            command_set_reverb(self->effectDspMain,self);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+        case PROP_HEADSET_BASSBOOST: {
+            g_mutex_lock(&self->lock);
+            self->headset_bassboost = g_value_get_float(value);
+            command_set_reverb(self->effectDspMain,self);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+        case PROP_HEADSET_LFO_SPIN: {
+            g_mutex_lock(&self->lock);
+            self->headset_lfo_spin = g_value_get_float(value);
+            command_set_reverb(self->effectDspMain,self);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+        case PROP_HEADSET_DECAY: {
+            g_mutex_lock(&self->lock);
+            self->headset_decay = g_value_get_float(value);
+            command_set_reverb(self->effectDspMain,self);
             g_mutex_unlock(&self->lock);
         }
             break;
@@ -934,7 +1146,7 @@ GST_PLUGIN_DEFINE (
 "jdspfx element",
 jdspfx_init,
 VERSION,
-"LGPL",
+"GPL",
 "GStreamer",
 "http://gstreamer.net/"
 )
