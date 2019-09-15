@@ -817,7 +817,7 @@ int32_t EffectDSPMain::command(uint32_t cmdCode, uint32_t cmdSize, void* pCmdDat
 					{
 						benchmarkValue[0][i] = (double)((float*)cep)[4 + i];
 #ifdef DEBUG
-						//						printf("[I] bench_c0: %lf\n", benchmarkValue[0][i]);
+						printf("[I] bench_c0: %lf\n", benchmarkValue[0][i]);
 #endif
 					}
 					isBenchData++;
@@ -837,7 +837,7 @@ int32_t EffectDSPMain::command(uint32_t cmdCode, uint32_t cmdSize, void* pCmdDat
 					{
 						benchmarkValue[1][i] = (double)((float*)cep)[4 + i];
 #ifdef DEBUG
-						//						printf("[I] bench_c1: %lf\n", benchmarkValue[1][i]);
+						printf("[I] bench_c1: %lf\n", benchmarkValue[1][i]);
 #endif
 					}
 					isBenchData++;
@@ -1600,4 +1600,68 @@ void EffectDSPMain::_loadReverb(reverbdata_t *r2){
     r = r2;
     refreshReverb();
     return;
+}
+void EffectDSPMain::_loadConv(int impulseCutted,int channels,float convGaindB,float* ir){
+
+    impChannels = channels;
+
+    //9999: ALLOCATE
+    previousimpChannels = impChannels;
+    impulseLengthActual = impulseCutted / impChannels;
+    if (convGaindB > 50.0)
+        convGaindB = 50.0;
+
+    //10004: COMPLETE
+    int i, j, tempbufValue;
+    tempbufValue = impulseLengthActual * impChannels;
+
+    double *finalIR = (double*)malloc(tempbufValue * sizeof(double));
+    for(int i=0;i<tempbufValue;i++){
+        finalIR[i] = (double)ir[i];
+    }
+
+    if (finalImpulse)
+    {
+        for (i = 0; i < previousimpChannels; i++)
+            free(finalImpulse[i]);
+        free(finalImpulse);
+        finalImpulse = 0;
+    }
+    if (!finalImpulse)
+    {
+
+        finalImpulse = (double**)malloc(impChannels * sizeof(double*));
+        for (i = 0; i < impChannels; i++)
+        {
+            double* channelbuf = (double*)malloc(impulseLengthActual * sizeof(double));
+            if (!channelbuf)
+            {
+                convolverReady = -1;
+                convolverEnabled = !convolverEnabled;
+                free(finalImpulse);
+                finalImpulse = 0;
+            }
+            double* p = finalIR + i;
+            for (j = 0; j < impulseLengthActual; j++)
+                channelbuf[j] = p[j * impChannels];
+            finalImpulse[i] = channelbuf;
+        }
+        if (!refreshConvolver(DSPbufferLength))
+        {
+            convolverReady = -1;
+            convolverEnabled = !convolverEnabled;
+            if (finalImpulse)
+            {
+                for (i = 0; i < impChannels; i++)
+                    free(finalImpulse[i]);
+                free(finalImpulse);
+                finalImpulse = 0;
+            }
+            if (finalIR)
+            {
+                free(finalIR);
+                finalIR = 0;
+            }
+        }
+    }
 }

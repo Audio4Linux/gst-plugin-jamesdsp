@@ -28,7 +28,7 @@ libgstjdspfx_la_SOURCES = gstjdspfx.cpp \
 libgstjdspfx_la_CXXFLAGS = $(GST_CFLAGS)
 libgstjdspfx_la_CFLAGS = $(GST_CFLAGS)
 libgstjdspfx_la_LIBADD = $(GST_LIBS)
-libgstjdspfx_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS) -rdynamic -ldl -Wl --gc-sections
+libgstjdspfx_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS) -lsamplerate -lsndfile -rdynamic -ldl -Wl --gc-sections
 libgstjdspfx_la_LIBTOOLFLAGS = --tag=disable-static
 
 # headers we need but don't want installed

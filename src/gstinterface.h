@@ -7,6 +7,7 @@
 #define GST_PLUGIN_JAMESDSP_GSTINTERFACE_H
 #include "EffectDSPMain.h"
 #include "gstjdspfx.h"
+#include "JdspImpResToolbox.c"
 #include <stdio.h>
 #include <stdint.h>
 #include <math.h>
@@ -108,6 +109,19 @@ void command_set_px4_vx256x1(EffectDSPMain *intf,int32_t cmd,const char *buffer)
 
     intf->command(EFFECT_CMD_SET_PARAM, 4*sizeof(int32_t)+256*sizeof(char),cep,NULL,NULL);
 }
+///Sends 10 floats as an array
+void command_set_px4_vx10x4(EffectDSPMain *intf,int32_t cmd,float *values){
+    effect_param_t *cep = (effect_param_t *)malloc(5*sizeof(int32_t)+sizeof(float)*10);
+    cep->psize = 4;
+    cep->vsize = 40;
+    cep->status = 0;
+    float * cmd_data_int = (float *)cep->data;
+    cmd_data_int[0] = cmd;
+    for (int i = 0; i < 10; i++)
+        cmd_data_int[1 + i] = (float) values[i];
+
+    intf->command(EFFECT_CMD_SET_PARAM, sizeof(float)*10+5*sizeof(int32_t),cep,NULL,NULL);
+}
 ///Configure buffer
 void command_set_buffercfg(EffectDSPMain *intf,int32_t samplerate,int32_t format){
     dsp_config_t *cep = (dsp_config_t *)malloc(sizeof(uint32_t)+sizeof(uint8_t));
@@ -127,6 +141,67 @@ void command_set_buffercfg(EffectDSPMain *intf,int32_t samplerate,int32_t format
     cep->samplingRate = (uint32_t)samplerate;
     cep->format = result;
     intf->command(EFFECT_CMD_SET_CONFIG, sizeof(uint32_t)+sizeof(uint8_t),cep,NULL,NULL);
+}
+///Prepare and send Convolver data
+void command_set_convolver(EffectDSPMain *intf,char* path,float gain,int quality,char* str_c0,char* str_c1,int32_t sr){
+    if(!path || path == NULL){
+        printf("[E] Convolver path is NULL\n");
+        return;
+    }
+    /*double *c0 = (double*)malloc(10*sizeof(double));
+    double *c1 = (double*)malloc(10*sizeof(double));
+    int benchNum = FFTConvolutionBenchmark(10, sr, c0, c1);
+    for (int i = 0 ; i < benchNum; i++)
+        printf("c0[%d]=%f\n",i,c0[i]);
+    for (int i = 0 ; i < benchNum; i++)
+        printf("c1[%d]=%f\n",i,c1[i]);*/
+
+    int p2 = 0;
+    for (int i = 0; i < strlen(str_c0); ++i)
+        p2 |= str_c0[i];
+    for (int i = 0; i < strlen(str_c1); ++i)
+        p2 |= str_c1[i];
+
+    if (p2 == 0 || str_c0==""||str_c1=="") {
+        printf("[E] Convolver benchmark data not (yet) set\n");
+        return;
+    }
+
+
+    float *c0 = (float*)calloc(10,sizeof(float));
+    float *c1 = (float*)calloc(10,sizeof(float));
+
+    c0[0] = atof(str_c0);
+    c1[0] = atof(str_c1);
+
+    int p = 0;
+    for (int i = 0; i < strlen(path); ++i) {
+        p |= path[i];
+    }
+    if (p == 0) {
+        printf("[E] Convolver path char array contains zero data\n");
+        return;
+    }
+
+    int* impinfo = GetLoadImpulseResponseInfo(path);
+    if (impinfo == NULL){
+        printf("[E] Convolver: GetLoadImpulseResponseInfo returned NULL\n");
+        return;
+    }
+    if (impinfo[2] != sr)
+        printf("[W] Convolver: samplerate mismatch, SYS %d <-> IRS %d\n",sr,impinfo[2]);
+
+    command_set_px4_vx10x4(intf,1997,c0);
+    command_set_px4_vx10x4(intf,1998,c1);
+
+    float* impulseResponse = ReadImpulseResponseToFloat(sr);
+
+    int frameCountTotal = impinfo[0]*impinfo[1];
+    int impulseCutted = (int)(frameCountTotal * (quality/100));
+
+    printf("---- Format: %d, Frames: %d, ImpulseCutted: %d, Channels: %d, Gain: %f, Quality %d\n",impinfo[3],impinfo[1],impulseCutted,impinfo[0],gain,quality);
+
+    intf->_loadConv(impulseCutted,impinfo[0],gain,impulseResponse);
 }
 ///Load and send DDC data
 void command_set_ddc(EffectDSPMain *intf,char* path,bool enabled){

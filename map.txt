@@ -8,9 +8,9 @@ px4_vx2
 	*112 bass.mode
 	*113 bass.filtertype
 	*114 bass.freq
-	*128 headset.preset
-	*137 stereowide.mode
-	*188 bs2b.mode 0, 0-2
+	x128 headset.preset
+	x137 stereowide.mode
+	x188 bs2b.mode 0, 0-2
  	*150 analogmodelling.tubedrive
 	
 	*1200 compression.enable
@@ -22,10 +22,10 @@ px4_vx2
 	*1202 tone.enable
 	*151 tone.filtertype 0
 	*1212 ddc.enable
-	1205 convolver.enable
+	*1205 convolver.enable
 	
-	10003 <Increment sliced buffer (convolver)>
-	10004 <Notify array transmit completed (convolver)>
+	x10003 <Increment sliced buffer (convolver)>
+	x10004 <Notify array transmit completed (convolver)>
 	x10005 <Increment sliced buffer (ddc)>
 	x10009 <Notify array transmit completed (ddc)>
 
@@ -35,25 +35,25 @@ px4_vx8
 	x8888 <Send buffer info/Allocate memory>
 
 px4_vx16
-	9999 <Send buffer info/Allocate memory>
+	x9999 <Send buffer info/Allocate memory>
 
 px4_vx60
 	*115 {tone.eq.custom} float[15]
 
 px4_vx40 
-	1997 <Convolver/Benchmark stuff>
-	1998 <Convolver/Benchmark stuff>
+	*1997 <Convolver/Benchmark stuff>
+	*1998 <Convolver/Benchmark stuff>
 
 px4_vx256
 	x12001 <Commit buffer (ddc)>
 
 px4_vx16384
-	12000 <Commit buffer (convolver)>
+	x12000 <Commit buffer (convolver)>
 
 /*****************************************
-	  JamesDSP command map
+	   JamesDSP command map
      * = implemented on linux
-      x = not needed on linux
+      x = replaced on linux
 
-	       ThePBone		
+	        ThePBone
 ******************************************/

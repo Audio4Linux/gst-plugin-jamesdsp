@@ -118,8 +118,9 @@ public:
 	int32_t process(audio_buffer_t *in, audio_buffer_t *out);
 	void _loadDDC(char*);
     void _loadReverb(reverbdata_t *r2);
+    void _loadConv(int impulseCutted,int impChannels,float convGaindB,float* ir);
 
-};
+    };
 typedef struct dsp_config_s
 {
     uint32_t   samplingRate;    // sampling rate

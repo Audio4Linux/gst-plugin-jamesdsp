@@ -93,8 +93,13 @@ enum {
     PROP_MASTER_LIMRELEASE,
     /* ddc */
     PROP_DDC_ENABLE,
-    PROP_DDC_COEFFS
-
+    PROP_DDC_COEFFS,
+    /* convolver */
+    PROP_CONVOLVER_ENABLE,
+    PROP_CONVOLVER_GAIN,
+    PROP_CONVOLVER_BENCH_C0,
+    PROP_CONVOLVER_BENCH_C1,
+    PROP_CONVOLVER_FILE,
 };
 
 #define ALLOWED_CAPS \
@@ -363,6 +368,28 @@ gst_jdspfx_class_init(GstjdspfxClass *klass) {
                                                           "", (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
 
 
+    /* convolver */
+    g_object_class_install_property(gobject_class, PROP_CONVOLVER_ENABLE,
+                                    g_param_spec_boolean("convolver-enable", "ConvEnabled",
+                                                         "Enable Convolver",
+                                                         FALSE,
+                                                         (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+      g_object_class_install_property (gobject_class, PROP_CONVOLVER_BENCH_C0,
+                                     g_param_spec_string ("convolver-bench-c0", "ConvC0", "Benchmark data for the convolver (JDSP4Linux-GUI is capable to generate these values)",
+                                                          "", (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property (gobject_class, PROP_CONVOLVER_BENCH_C1,
+                                     g_param_spec_string ("convolver-bench-c1", "ConvC1", "Benchmark data for the convolver (JDSP4Linux-GUI is capable to generate these values)",
+                                                          "", (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property(gobject_class, PROP_CONVOLVER_GAIN,
+                                    g_param_spec_float("convolver-gain", "ConvGain", "Convolver gain (dB)",
+                                                       -80, 30, 0,
+                                                       (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+    g_object_class_install_property (gobject_class, PROP_CONVOLVER_FILE,
+                                     g_param_spec_string ("convolver-file", "ConvFile", "Impulse response file",
+                                                          "", (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+
+
+
 
     gst_element_class_set_static_metadata(gstelement_class,
                                           "jdspfx",
@@ -463,6 +490,12 @@ static void sync_all_parameters(Gstjdspfx * self) {
     command_set_px4_vx2x1(self->effectDspMain,
                           1212, self->ddc_enabled);
 
+    // convolver
+    command_set_convolver(self->effectDspMain, self->convolver_file,self->convolver_gain,self->convolver_quality,
+                          self->convolver_bench_c0,self->convolver_bench_c1,self->samplerate);
+    command_set_px4_vx2x1(self->effectDspMain,
+                          1205, self->convolver_enabled);
+
 }
 
 /* initialize the new element
@@ -525,6 +558,16 @@ gst_jdspfx_init(Gstjdspfx * self) {
     self->ddc_enabled = FALSE;
     memset (self->ddc_coeffs, 0,
             sizeof(self->ddc_coeffs));
+
+    self->convolver_enabled = FALSE;
+    memset (self->convolver_bench_c0, 0,
+            sizeof(self->convolver_bench_c0));
+    memset (self->convolver_bench_c1, 0,
+            sizeof(self->convolver_bench_c1));
+    memset (self->convolver_file, 0,
+            sizeof(self->convolver_file));
+    self->convolver_gain = 0;
+    self->convolver_quality = 100;
 
     /* initialize private resources */
     self->effectDspMain = NULL;
@@ -919,6 +962,48 @@ gst_jdspfx_set_property(GObject *object, guint prop_id,
             g_mutex_unlock(&self->lock);
         }
             break;
+        case PROP_CONVOLVER_ENABLE: {
+            g_mutex_lock(&self->lock);
+            self->convolver_enabled = g_value_get_boolean(value);
+            command_set_px4_vx2x1(self->effectDspMain,
+                                  1205, self->convolver_enabled);
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+        case PROP_CONVOLVER_FILE: {
+            g_mutex_lock(&self->lock);
+            memset (self->convolver_file , 0,
+                    sizeof(self->convolver_file ));
+            strcpy(self->convolver_file ,
+                   g_value_get_string (value));
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+        case PROP_CONVOLVER_BENCH_C0: {
+            g_mutex_lock(&self->lock);
+            memset (self->convolver_bench_c0 , 0,
+                    sizeof(self->convolver_bench_c0 ));
+            strcpy(self->convolver_bench_c0 ,
+                   g_value_get_string (value));
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+        case PROP_CONVOLVER_BENCH_C1: {
+            g_mutex_lock(&self->lock);
+            memset (self->convolver_bench_c1 , 0,
+                    sizeof(self->convolver_bench_c1 ));
+            strcpy(self->convolver_bench_c1 ,
+                   g_value_get_string (value));
+            g_mutex_unlock(&self->lock);
+        }
+            break;
+        case PROP_CONVOLVER_GAIN:
+        {
+            g_mutex_lock (&self->lock);
+            self->convolver_gain = g_value_get_float(value);
+            g_mutex_unlock (&self->lock);
+        }
+            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
             break;
@@ -990,6 +1075,8 @@ gst_jdspfx_transform_ip(GstBaseTransform *base, GstBuffer *buf) {
         filter->samplerate = GST_AUDIO_FILTER_RATE(filter);
         g_mutex_lock(&filter->lock);
         command_set_buffercfg(filter->effectDspMain,filter->samplerate,filter->format);
+        command_set_convolver(filter->effectDspMain, filter->convolver_file,filter->convolver_gain,filter->convolver_quality,
+                              filter->convolver_bench_c0,filter->convolver_bench_c1,filter->samplerate);
         g_mutex_unlock(&filter->lock);
     }
 

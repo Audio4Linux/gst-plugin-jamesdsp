@@ -100,6 +100,14 @@ struct _Gstjdspfx {
     gboolean ddc_enabled;
     gchar ddc_coeffs[4096];
 
+    // convolver
+    gboolean convolver_enabled;
+    gint32 convolver_quality;
+    gfloat convolver_gain;
+    gchar convolver_bench_c0[128];
+    gchar convolver_bench_c1[128];
+    gchar convolver_file[4096];
+
     /* < private > */
     EffectDSPMain *effectDspMain;
     void *so_handle;
