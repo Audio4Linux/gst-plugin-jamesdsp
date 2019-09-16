@@ -374,12 +374,12 @@ gst_jdspfx_class_init(GstjdspfxClass *klass) {
                                                          "Enable Convolver",
                                                          FALSE,
                                                          (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
-      g_object_class_install_property (gobject_class, PROP_CONVOLVER_BENCH_C0,
+    /*g_object_class_install_property (gobject_class, PROP_CONVOLVER_BENCH_C0,
                                      g_param_spec_string ("convolver-bench-c0", "ConvC0", "Benchmark data for the convolver (JDSP4Linux-GUI is capable to generate these values)",
                                                           "", (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
     g_object_class_install_property (gobject_class, PROP_CONVOLVER_BENCH_C1,
                                      g_param_spec_string ("convolver-bench-c1", "ConvC1", "Benchmark data for the convolver (JDSP4Linux-GUI is capable to generate these values)",
-                                                          "", (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));
+                                                          "", (GParamFlags)(G_PARAM_WRITABLE | GST_PARAM_CONTROLLABLE)));*/
     g_object_class_install_property(gobject_class, PROP_CONVOLVER_GAIN,
                                     g_param_spec_float("convolver-gain", "ConvGain", "Convolver gain (dB)",
                                                        -80, 30, 0,
@@ -562,8 +562,12 @@ gst_jdspfx_init(Gstjdspfx * self) {
     self->convolver_enabled = FALSE;
     memset (self->convolver_bench_c0, 0,
             sizeof(self->convolver_bench_c0));
+    strcpy(self->convolver_bench_c0 ,
+           "0.000000");
     memset (self->convolver_bench_c1, 0,
             sizeof(self->convolver_bench_c1));
+    strcpy(self->convolver_bench_c1 ,
+           "0.000000");
     memset (self->convolver_file, 0,
             sizeof(self->convolver_file));
     self->convolver_gain = 0;

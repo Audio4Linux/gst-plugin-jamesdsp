@@ -115,10 +115,11 @@ void command_set_px4_vx10x4(EffectDSPMain *intf,int32_t cmd,float *values){
     cep->psize = 4;
     cep->vsize = 40;
     cep->status = 0;
-    float * cmd_data_int = (float *)cep->data;
+    int32_t * cmd_data_int = (int32_t *)cep->data;
+    float * cmd_data_float = (float *)cep->data;
     cmd_data_int[0] = cmd;
     for (int i = 0; i < 10; i++)
-        cmd_data_int[1 + i] = (float) values[i];
+        cmd_data_float[1 + i] = (float) values[i];
 
     intf->command(EFFECT_CMD_SET_PARAM, sizeof(float)*10+5*sizeof(int32_t),cep,NULL,NULL);
 }
