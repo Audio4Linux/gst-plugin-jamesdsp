@@ -1,7 +1,27 @@
 # JamesDSP for Linux
 ###### (OpenSource Version)
-This is experimental and obviously work in progress.
-Currently everything (analog modelling, bass boost, bs2b, VDC/DDCs, limiter, compression, reverbation and the stereo widener), except the convolver is implemented.
+### Technical Data
+Supported sample formats:
+* 32-bit float (LE)
+* 32-bit int (LE)
+
+Supported samplerates:
+* 44100
+* 48000
+### Effects
+Pretty much everything from the opensource version is implemented:
+* Analog modelling (12AX7)
+* BS2B
+* ViPER DDCs
+* Limiter
+* Compression
+* Convolver
+* Reverbation (Progenitor2)
+* Bass boost
+* Stereo widener (Mid/Side) 
+
+Instead of being tied to presets; stereo widener, bs2b and the reverbation engine can be fully customized.
+
 
 
 __This is the repo of the gst-plugin. You might want to visit the [main repository](https://github.com/ThePBone/JDSP4Linux)__
