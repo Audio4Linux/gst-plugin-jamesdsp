@@ -1,5 +1,8 @@
 # JamesDSP for Linux
 ###### (OpenSource Version)
+
+>Maintained by [@ThePBone](https://t.me/ThePBone)
+
 ### Technical Data
 Supported sample formats:
 * 32-bit float (LE)
@@ -24,7 +27,7 @@ Instead of being tied to presets; stereo widener, bs2b and the reverbation engin
 
 
 
-__This is the repo of the gst-plugin. You might want to visit the [main repository](https://github.com/ThePBone/JDSP4Linux)__
+__This is the repo of the gst-plugin. You might want to visit the [main repository](https://github.com/Audio4Linux/JDSP4Linux)__
 
 ## AUR package
 
@@ -37,7 +40,7 @@ Note: This package alone does not install JDSP for you. Installation instruction
 ![AUR version](https://img.shields.io/aur/version/gst-plugin-jamesdsp-git?label=aur)
 
 ## Launch it
-You can find more information in the [main repo](https://github.com/ThePBone/JDSP4Linux).
+You can find more information in the [main repo](https://github.com/Audio4Linux/JDSP4Linux).
    
    	gst-launch-1.0 -v pulsesrc device=[INPUTSINK].monitor volume=1.0 \
 	! jdspfx enable="true" analogmodelling-enable="true" analogmodelling-tubedrive="6000" \
