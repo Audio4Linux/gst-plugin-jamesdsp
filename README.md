@@ -1,6 +1,6 @@
 # JamesDSP for Linux
 
-### This repository is outdated. Please check https://github.com/Audio4Linux/JDSP4Linux for updates. The GStreamer plugin for libjamesdsp is now backed into the GUI.
+### This repository is outdated. Please check https://github.com/Audio4Linux/JDSP4Linux for updates. The GStreamer plugin for libjamesdsp is now baked into the GUI.
 
 ###### (OpenSource Version)
 
